@@ -86,9 +86,12 @@ One folder per recording: `data/YYYYMMDD_run##_<config>/` with `puck.bin`
 (the WITn.TXT, renamed), `racebox.csv`, `notes.md`. Then
 `tap_check.py puck.bin` as a quick health pass before anything else reads it.
 
-## RaceBox (when it lands)
+## RaceBox (landed + configured 2026-08-14)
 
-Firmware update in the RaceBox app, set 25 Hz recording, verify CSV
-export columns against `ingest_racebox.m` (it fails loudly and prints
-what it found — expected on first contact), dash mount with sky view,
-never the spare well.
+Remaining before venue day: record one short outdoor mini-session (it
+needs GNSS sky view — a driveway minute with a few hand-shakes is
+enough), export the CSV from the RaceBox app, and push it through
+`ingest_racebox.m` (it fails loudly and prints the columns it found —
+expected on first contact; the mapping gets hardened against the real
+export, and `meta.rate_true` should read ≈ 25 Hz). Dash mount with sky
+view, never the spare well.
