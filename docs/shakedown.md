@@ -80,6 +80,21 @@ keeps failing (from the plan): Movella DOT-class replacement.
 7. notes.md: config name, PASM mode, hot pressures, fuel, ambient, surface.
 8. Between sessions puck off; top up from a power bank if the day runs long.
 
+## Course-run driving protocol (autocross)
+
+Drive like a metronome: ~90–95% pace, identical inputs, **alternate PASM
+modes run-by-run** (day 1: N-S-N-S; day 2 reversed S-N-S-N) so course
+learning and tire heat-drift land on both modes equally. One crisp
+steering input per element — hold, unwind; a decisive turn-in IS a
+step-steer. Brake straight, then turn, then throttle. Slaloms = the best
+per-mode instrument: constant throttle, symmetric rhythm. Sport Chrono
+drivetrain dial FIXED all day — only the PASM button changes. ESC on
+(note interventions). Same line every run; walk the course 2–3× before
+run 1. **Last run of the day = the one limit run** (either mode, noted):
+that's the grip-ceiling / G-G datum testing the 0.75–0.85 g prediction —
+not part of the A/B. Mode into notes BEFORE the run; blind rating sheet
+immediately AFTER, before times, bench racing, or any data.
+
 ## Offload (desk, per session)
 
 One folder per recording: `data/YYYYMMDD_run##_<config>/` with `puck.bin`
