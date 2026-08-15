@@ -88,8 +88,11 @@ learning and tire heat-drift land on both modes equally. One crisp
 steering input per element — hold, unwind; a decisive turn-in IS a
 step-steer. Brake straight, then turn, then throttle. Slaloms = the best
 per-mode instrument: constant throttle, symmetric rhythm. Sport Chrono
-drivetrain dial FIXED all day — only the PASM button changes. ESC on
-(note interventions). Same line every run; walk the course 2–3× before
+drivetrain dial FIXED all day — only the PASM button changes. PSM/TC
+**off** (owner call 2026-08-15): same state every run, record the exact
+cluster indication in notes.md, and expect PSM to re-arm under hard
+braking (typical Porsche behavior) — a brake-zone intervention spike in
+the data is that, not the dampers. Same line every run; walk the course 2–3× before
 run 1. **Last run of the day = the one limit run** (either mode, noted):
 that's the grip-ceiling / G-G datum testing the 0.75–0.85 g prediction —
 not part of the A/B. Mode into notes BEFORE the run; blind rating sheet
