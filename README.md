@@ -38,9 +38,11 @@ Device constants baked into the ingest: WT901SDCL-BT50, ±16 g / ±2000 °/s /
 
 ## Axes (mounting contract)
 
-Mount the puck flat, label up, **printed Y arrow toward the nose**. Then:
-device X = car right, Y = car forward, Z = up. Car mapping:
-`a_long=+accY, a_lat=+accX, a_vert=+accZ`; yaw rate = gyrZ. Note the
-name-crossing: WitMotion "Roll" (about X) is car **pitch**, WitMotion
-"Pitch" (about Y) is car **roll**. If geometry forces a rotated mount,
-photograph it and fix the rotation at ingest — never in the spreadsheet.
+Mount the puck flat, label up, **printed X arrow toward the nose** (Y
+arrow then points at the driver's door). That is ISO 8855 body axes:
+X forward, Y left, Z up. Car mapping: `a_long=+accX`, `a_lat=+accY`
+(left-positive per ISO — negate for SAE right-positive), `a_vert=+accZ`;
+roll rate = gyrX, pitch rate = gyrY, yaw rate = gyrZ, and the device's
+"Roll"/"Pitch" angle outputs read as car roll/pitch directly. If geometry
+forces a rotated mount, photograph it and fix the rotation at ingest —
+never in the spreadsheet.

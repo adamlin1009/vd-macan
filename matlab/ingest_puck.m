@@ -5,11 +5,12 @@ function [D, meta] = ingest_puck(path, opts)
 %   [D, meta] = INGEST_PUCK(path, rate=200)  % nominal rate if no timestamps
 %
 %   D    timetable: t (datetime or duration), acc [g], gyr [deg/s],
-%        ang [deg] (device axes X=right, Y=forward, Z=up when the case's
-%        printed Y arrow points at the car's nose).
-%        Car mapping for that mounting: a_long=+accY, a_lat=+accX,
-%        a_vert=+accZ; car roll rate=gyrY, pitch rate=gyrX, yaw rate=gyrZ.
-%        WitMotion "Roll"(angX) = car pitch; "Pitch"(angY) = car roll.
+%        ang [deg], in device axes. Mounting contract: printed X arrow at
+%        the car's nose, label up -> ISO 8855 body axes (X forward,
+%        Y left, Z up). Car mapping: a_long=+accX, a_lat=+accY
+%        (left-positive per ISO; negate for SAE), a_vert=+accZ; roll
+%        rate=gyrX, pitch rate=gyrY, yaw rate=gyrZ; the device's
+%        "Roll"(angX)/"Pitch"(angY) angles are car roll/pitch directly.
 %   meta fields: format, n, rate_true, dt_med_ms, dt_p99_ms, gap_max_ms,
 %        dup_frac (bandwidth-resampling detector), bad_frames.
 %

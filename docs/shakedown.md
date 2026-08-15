@@ -58,8 +58,9 @@ keeps failing (from the plan): Movella DOT-class replacement.
 - Spot: driver's-side seat rail, bare metal, where nothing hits it at
   full seat travel — run the seat through its whole range FIRST.
 - Isopropyl-wipe both surfaces. VHB square on the puck's flat base, press
-  firm 30 s. Puck flat, label up, **printed Y arrow pointing at the nose**
-  (then X = car right, Z = up; vertical ride channel = az).
+  firm 30 s. Puck flat, label up, **printed X arrow pointing at the nose**
+  (Y arrow at the driver's door) — ISO 8855 body axes: X forward, Y left,
+  Z up. Vertical ride channel = az; device Roll/Pitch = car roll/pitch.
 - Photograph the mounted orientation once — it's the axes contract for
   every future session.
 - Knuckle-tap the rail next to the puck tomorrow with a short recording
