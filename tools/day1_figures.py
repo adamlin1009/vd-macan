@@ -599,11 +599,13 @@ reproduce the officials to about a tenth.
 |---|---|---|---|---|
 @@TABLE@@
 
-Sport+ was quicker every time it ran, but the margin is tenths on a
-52-second course — while from the seat the two modes felt like
-different cars. That tension between "feels transformed" and "barely
-faster" is the whole reason this project pairs subjective ratings with
-instruments.
+Sport+ holds the day's best time and the mode averages sit about half
+a second apart — though run 4 broke the pattern, coming in slower
+than the Normal runs on either side of it, and three runs per mode is
+thin statistics. Either way the margin is tenths on a 52-second
+course, while from the seat the two modes felt like different cars.
+That tension between "feels transformed" and "barely faster" is the
+whole reason this project pairs subjective ratings with instruments.
 
 @@FIG_TIMES@@
 
