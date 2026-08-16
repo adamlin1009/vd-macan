@@ -658,22 +658,28 @@ that can referee is the puck's roll-rate gyro, run by run:
 
 @@FIG_ROLL@@
 
-The result refuses to flatter the impression. Raw roll-rate RMS is
-higher in Sport+, not lower — @@RS@@ °/s against @@RN@@ °/s, about
-@@RGAIN@@% more — and normalizing by how hard the car was actually
-being driven (roll rate per unit of lateral-acceleration rate) lands
-at a wash: @@NRM_N@@ in Normal, @@NRM_S@@ in Sport+. That doesn't
-mean the impression is wrong. It means roll *rate* is not roll
-*angle*: what a firmer damper map suppresses is how far the body
-leans and how it settles, while broadband roll-rate RMS mostly tracks
-the course and the driver — and the Sport+ runs were driven harder. A
-6-axis IMU's fused roll angle can't honestly separate body lean from
-sustained lateral acceleration mid-corner, so the angle-domain answer
-— the thing the seat actually feels — waits for matched transients
-and the ride block, where the inputs are controlled. Carrying a
-sensation across to the right number is the discipline this project
-exists to practice, and this is what it looks like when the first
-number you grab turns out to be the wrong one.
+The result refuses to flatter the impression — and then rewards a
+closer reading of it. Raw roll-rate RMS is higher in Sport+, not
+lower: @@RS@@ °/s against @@RN@@ °/s, about @@RGAIN@@% more, and
+normalizing by how hard the car was actually being driven (roll rate
+per unit of lateral-acceleration rate) lands at a wash — @@NRM_N@@ in
+Normal, @@NRM_S@@ in Sport+. But "body roll" was always two claims
+wearing one phrase. The lean the seat complains about is roll *angle*
+— how far the body heels over and how it settles — and a rate gyro
+doesn't measure that, while a 6-axis IMU's fused angle can't honestly
+separate lean from sustained lateral acceleration mid-corner. The
+*rate* side is where "planted and reactive" lives, and there the
+number makes physical sense: a firmer damper map makes the body track
+its inputs faster, which pushes rate content up even as the lean
+itself shrinks — a tighter, more agile car generates *more* roll rate,
+not less. Higher rate RMS in Sport+ is consistent with exactly that,
+tangled with the other honest explanation that I drove the Sport+
+runs harder. Separating "the car responds faster" from "the driver
+asked for more" takes matched inputs — step-steers at fixed speed,
+and the ride block, where the road does the asking — and the
+angle-domain lean question waits for the same. Carrying a sensation
+across to the right number is the discipline this project exists to
+practice; this is what it looks like mid-translation.
 
 ## What's next
 
