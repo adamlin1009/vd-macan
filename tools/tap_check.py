@@ -170,18 +170,22 @@ def parse_text(text):
 
 def load(path):
     buf = open(path, "rb").read()
+    ble = buf.startswith(b"ADDR:")      # app .wplay = raw BLE capture
     head = buf[:4096]
     printable = sum(32 <= b < 127 or b in (9, 10, 13) for b in head)
-    if head and printable / len(head) > 0.9:
+    if not ble and head and printable / len(head) > 0.9:
         rows = parse_text(buf.decode("utf-8", "replace"))
         if rows:
-            return rows, {"format": "text-export", "bad_frames": 0}
+            return rows, {"format": "text-export", "bad_frames": 0,
+                          "ble_capture": False}
     std_rows, bad = parse_standard(buf)
     f61_rows = parse_flag61(buf)
     if f61_rows and len(f61_rows) > len(std_rows):
-        return f61_rows, {"format": "flag61", "bad_frames": 0}
+        return f61_rows, {"format": "flag61" + (" (.wplay)" if ble else ""),
+                          "bad_frames": 0, "ble_capture": ble}
     if std_rows:
-        return std_rows, {"format": "standard-11B", "bad_frames": bad}
+        return std_rows, {"format": "standard-11B", "bad_frames": bad,
+                          "ble_capture": ble}
     sys.exit(f"FAIL: could not parse {path} as any known WitMotion format "
              f"(std={len(std_rows)} frames, flag61="
              f"{0 if not f61_rows else len(f61_rows)})")
@@ -250,10 +254,17 @@ def main():
         maxgap = float(np.max(dts)) if len(dts) else float("nan")
         p99 = float(np.percentile(np.abs(dts - 1.0 / args.rate), 99))
         err = abs(rate - args.rate) / args.rate
-        checks.append(("true sample rate",
-                       "PASS" if err <= 0.03 else "FAIL",
+        if err <= 0.03:
+            rst, note = "PASS", ""
+        elif meta.get("ble_capture"):
+            rst = "WARN"
+            note = (" — BLE capture: shortfall = radio drops (device tick "
+                    "= dt median); the SD-card file is the complete record")
+        else:
+            rst, note = "FAIL", ""
+        checks.append(("true sample rate", rst,
                        f"{rate:.1f} Hz vs {args.rate:.0f} set "
-                       f"({100*err:.1f}% off, span {span:.1f} s)"))
+                       f"({100*err:.1f}% off, span {span:.1f} s){note}"))
         checks.append(("timestamps monotonic",
                        "PASS" if mono else "FAIL", ""))
         checks.append(("max gap",
