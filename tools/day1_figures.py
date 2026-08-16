@@ -669,12 +669,18 @@ wearing one phrase. The lean the seat complains about is roll *angle*
 doesn't measure that, while a 6-axis IMU's fused angle can't honestly
 separate lean from sustained lateral acceleration mid-corner. The
 *rate* side is where "planted and reactive" lives, and there the
-number makes physical sense: a firmer damper map makes the body track
-its inputs faster, which pushes rate content up even as the lean
-itself shrinks — a tighter, more agile car generates *more* roll rate,
-not less. Higher rate RMS in Sport+ is consistent with exactly that,
-tangled with the other honest explanation that I drove the Sport+
-runs harder. Separating "the car responds faster" from "the driver
+number makes physical sense — doubly so on this car. The steady-state
+lean budget is set by springs, anti-roll bars, track width, and CG
+height, all stock here and none of them touched by PASM; a damper
+can't hold the body up, it can only decide how fast the lean develops
+and whether it overshoots on the way. So the mode switch shouldn't
+much change how far this car rolls once settled — it changes how the
+roll *happens*, and a firmer map that makes the body track its inputs
+faster generates *more* roll rate, not less. That is the roll version
+of this plan's registered prediction: the modes should separate in
+the transients, not the steady-state numbers. Higher rate RMS in
+Sport+ is consistent with exactly that, tangled with the other honest
+explanation that I drove the Sport+ runs harder. Separating "the car responds faster" from "the driver
 asked for more" takes matched inputs — step-steers at fixed speed,
 and the ride block, where the road does the asking — and the
 angle-domain lean question waits for the same. Carrying a sensation
