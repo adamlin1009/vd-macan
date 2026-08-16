@@ -71,12 +71,17 @@ keeps failing (from the plan): Movella DOT-class replacement.
 
 1. Cold pressures to placard, log them (same gauge, eye level).
 2. **Puck IS IN THE CAR, mounted, blue LED flashing — physically verify
-   before the first launch.** (Day-1 lesson, 2026-08-15: the puck
-   recorded the paddock all session; the SD data proves it never rode
-   along. The sensor doesn't measure what it isn't bolted to.) Puck on
-   ≥ 1 min before rolling (RTC + gyro settle).
+   before the first launch.** And never trust its clock: the tick runs
+   ~2% slow and the offset re-arms every power-on (day-1 lesson — the
+   file clock trailed GPS by 131→181 s across the session and made
+   in-car data look like paddock stillness until envelope
+   cross-correlation against the RaceBox unmasked it; day1_figures.py /
+   sync_runs handle the fit). Puck on ≥ 1 min before rolling.
 3. RaceBox on, wait for satellite fix, start recording.
 4. **Three sharp stationary brake jabs** — the clock-sync signature.
+   (Day 1 ran without them; course runs carry their own launch
+   fingerprint and envelope cross-correlation synced fine. Jabs remain
+   REQUIRED for ride-block passes, which have no such fingerprint.)
 5. Drive. Autocross: recordings restart per run, so jabs per run; ride
    loops: one recording per config, jabs at start and end.
 6. End of recording: 15 s still → three jabs again → 5 s still → puck off.

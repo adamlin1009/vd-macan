@@ -364,6 +364,99 @@ def fig_gg(d, runs):
     return "".join(parts)
 
 
+def analyze_puck(d, runs):
+    """Per-file clock fit (envelope xcorr vs RaceBox) + per-run metrics.
+
+    The puck's tick is a clean 5 ms RELATIVE, but absolute rate runs ~2%
+    slow and the offset re-arms each power-on: fit OFF(t)=a+b*t per file
+    from per-run cross-correlation, then window with the corrected clock.
+    """
+    out = {"roll": [], "corr_ay": [], "off_first": None, "off_last": None,
+           "xc": []}
+    rb_env_t = d["ts"]
+    rb_env = np.hypot(d["gx"], d["gy"])
+    for name, runidx in [("WIT39.TXT", [0, 1, 2, 3]),
+                         ("WIT40.TXT", [4, 5])]:
+        rows = [r for r in parse_flag61(
+            (SESSION / "puck_sd" / name).read_bytes()) if r["t"]]
+        pt = np.array([(r["t"] - d["t0"]).total_seconds() for r in rows])
+        acc = np.array([r["acc"] for r in rows], float) * ACC_SCALE
+        gyr = np.array([r["gyr"] for r in rows], float) * GYR_SCALE
+        paxy = np.hypot(acc[:, 0], acc[:, 1])
+        anchors = []
+        for ri in runidx:
+            s, f = runs[ri]["t_s"], runs[ri]["t_f"]
+            grid = np.arange(s - 15, f + 15, 0.2)
+            rbv = np.interp(grid, rb_env_t, rb_env)
+            best, boff = -9, None
+            for OFF in np.arange(100, 220, 0.2):
+                pv = np.interp(grid - OFF, pt, paxy, left=0, right=0)
+                c = np.corrcoef(rbv, pv)[0, 1]
+                if c > best:
+                    best, boff = c, OFF
+            anchors.append((0.5 * (s + f), boff))
+            out["xc"].append(best)
+        x = np.array([a[0] for a in anchors])
+        y = np.array([a[1] for a in anchors])
+        b, a = np.polyfit(x, y, 1) if len(x) > 1 else (0.0, y[0])
+        for ri in runidx:
+            s, f = runs[ri]["t_s"], runs[ri]["t_f"]
+            OFF = a + b * 0.5 * (s + f)
+            m = (pt >= s - OFF) & (pt <= f - OFF)
+            out["roll"].append(float(np.sqrt(np.mean(gyr[m, 0] ** 2))))
+            grid = np.arange(s + 1, f - 1, 0.2)
+            pay = np.interp(grid, pt[m] + OFF, acc[m, 1])
+            rgy = np.interp(grid, rb_env_t, d["gy"])
+            out["corr_ay"].append(float(np.corrcoef(pay, rgy)[0, 1]))
+            if out["off_first"] is None:
+                out["off_first"] = OFF
+            out["off_last"] = OFF
+    # roll rate normalized by lateral-accel rate, per mode
+    norm = []
+    for i, r in enumerate(runs):
+        m = (d["ts"] >= r["t_s"]) & (d["ts"] <= r["t_f"])
+        aydot = np.sqrt(np.mean(np.gradient(d["gy"][m], d["ts"][m]) ** 2))
+        norm.append(out["roll"][i] / aydot)
+    out["norm_n"] = float(np.mean([norm[i] for i in (0, 2, 4)]))
+    out["norm_s"] = float(np.mean([norm[i] for i in (1, 3, 5)]))
+    return out
+
+
+def fig_roll(roll_rms):
+    h = 300
+    padl, padr, padt, padb = 64, 24, 34, 44
+    ymax = max(roll_rms) * 1.25
+    def ymap(v):
+        return padt + (ymax - v) / ymax * (h - padt - padb)
+    def xmap(i):
+        return padl + (i + 0.5) * (W - padl - padr) / 6
+    parts = [svg_open(h, "Roll-rate RMS per run by PASM mode, from the console-mounted IMU")]
+    for g in range(0, int(ymax) + 1, 2):
+        parts.append(f'<line x1="{padl}" y1="{ymap(g):.1f}" x2="{W-padr}" '
+                     f'y2="{ymap(g):.1f}" stroke="{GRID}" stroke-width="1"/>')
+        parts.append(txt(padl - 10, ymap(g) + 3, f"{g}", 10, DIM, "end"))
+    bw = 24
+    for i, v in enumerate(roll_rms):
+        c = C_N if MODES[i] == "Normal" else C_S
+        x = xmap(i) - bw / 2
+        y = ymap(v)
+        parts.append(f'<path d="M{x:.1f},{ymap(0):.1f} L{x:.1f},{y+4:.1f} '
+                     f'Q{x:.1f},{y:.1f} {x+4:.1f},{y:.1f} L{x+bw-4:.1f},{y:.1f} '
+                     f'Q{x+bw:.1f},{y:.1f} {x+bw:.1f},{y+4:.1f} '
+                     f'L{x+bw:.1f},{ymap(0):.1f} Z" fill="{c}">'
+                     f'<title>Run {i+1} · {MODES[i]} · {v:.2f} deg/s RMS</title></path>')
+        parts.append(txt(xmap(i), y - 8, f"{v:.2f}", 10, INK, "middle"))
+        parts.append(txt(xmap(i), h - padb + 18, f"RUN {i+1}", 9, DIM, "middle"))
+        parts.append(txt(xmap(i), h - padb + 31, MODES[i].upper(), 9,
+                         C_N if MODES[i] == "Normal" else C_S, "middle"))
+    parts.append(f'<line x1="{padl}" y1="{ymap(0):.1f}" x2="{W-padr}" '
+                 f'y2="{ymap(0):.1f}" stroke="{STRONG}" stroke-width="1"/>')
+    parts.append(txt(8, padt - 12, "ROLL-RATE RMS · °/S", 9, DIM))
+    parts.append(legend(padl + 96, padt - 20, [(C_N, "NORMAL"), (C_S, "SPORT+")]))
+    parts.append("</svg>")
+    return "".join(parts)
+
+
 def figure(svg, num, title, note):
     return (f'<figure class="log-figure">{svg}<figcaption>'
             f'<span>FIG {num:02d}</span><span>{title}</span>'
@@ -380,16 +473,12 @@ def main():
     runs, g0, g1 = find_runs(d)
     print("runs:", [f"{r['time']:.2f}s" for r in runs])
 
-    # Puck stillness audit — the SD data shows the puck was NOT aboard
-    # during the runs (az ~1.000 g, |gyr| < 1 dps in every run window).
-    # Documented in the post; no puck figure exists for day 1.
-    pt, pacc, pgyr = load_puck()
-    pts = np.array([(x - d["t0"]).total_seconds() for x in pt])
-    for i, r in enumerate(runs):
-        m = (pts >= r["t_s"]) & (pts <= r["t_f"])
-        print(f"  puck during run {i+1}: az_std {pacc[m,2].std():.4f} g, "
-              f"|gyr|max {np.abs(pgyr[m]).max():.1f} dps "
-              f"({'STILL' if pacc[m,2].std() < 0.02 else 'MOVING'})")
+    pk = analyze_puck(d, runs)
+    print("roll RMS deg/s:", [f"{x:.2f}" for x in pk["roll"]])
+    print(f"clock offsets {pk['off_first']:.0f} -> {pk['off_last']:.0f} s; "
+          f"xcorr {min(pk['xc']):.2f}-{max(pk['xc']):.2f}; "
+          f"ay corr {min(pk['corr_ay']):+.2f}..{max(pk['corr_ay']):+.2f}; "
+          f"norm N {pk['norm_n']:.2f} vs S+ {pk['norm_s']:.2f}")
 
     lat = [float(np.abs(d["gy"][r["a"]:r["b"]]).max()) for r in runs]
     corner = (d["v"] > 8) & (np.abs(d["gy"]) > 0.3)
@@ -412,7 +501,10 @@ def main():
                         "RACEBOX MINI S · 25 HZ"),
         "GG": figure(fig_gg(d, runs), 4,
                      "G-G DIAGRAM BY PASM MODE · ALL SIX RUNS",
-                     "DASH-MOUNTED · UNCORRECTED FOR BODY ROLL"),
+                     "ROOF-MOUNTED · UNCORRECTED FOR BODY ROLL"),
+        "ROLL": figure(fig_roll(pk["roll"]), 5,
+                       "ROLL-RATE RMS PER RUN · CONSOLE-MOUNTED IMU",
+                       "WT901SDCL-BT50 · CLOCK SYNCED TO GPS"),
     }
 
     rows = "\n".join(
@@ -420,11 +512,23 @@ def main():
         f"{max(d['v'][runs[i]['a']:runs[i]['b']])/MPH2MPS:.1f} | {lat[i]:.2f} |"
         for i in range(6))
 
+    rn = float(np.mean([pk["roll"][i] for i in (0, 2, 4)]))
+    rs = float(np.mean([pk["roll"][i] for i in (1, 3, 5)]))
     post = POST_TEMPLATE
     for key, val in {
         "@@TABLE@@": rows,
         "@@P95@@": f"{lat_p95:.2f}",
         "@@MAX@@": f"{lat_max:.2f}",
+        "@@RN@@": f"{rn:.2f}",
+        "@@RS@@": f"{rs:.2f}",
+        "@@RGAIN@@": f"{100*(rs/rn-1):.0f}",
+        "@@NRM_N@@": f"{pk['norm_n']:.2f}",
+        "@@NRM_S@@": f"{pk['norm_s']:.2f}",
+        "@@OFF1@@": f"{pk['off_first']:.0f}",
+        "@@OFF6@@": f"{pk['off_last']:.0f}",
+        "@@XCLO@@": f"{min(pk['xc']):.2f}",
+        "@@XCHI@@": f"{max(pk['xc']):.2f}",
+        "@@AYHI@@": f"{max(pk['corr_ay']):.2f}",
         **{f"@@FIG_{k}@@": v for k, v in figs.items()},
     }.items():
         post = post.replace(key, val)
@@ -449,11 +553,12 @@ session; the TPMS read 36/39 at the start (a consistent −1 psi against
 the gauge on both axles) and climbed to 40/42 by the end. Fuel ran from
 about 5/8 to 1/2 tank.
 
-The RaceBox rode the dash at 25 Hz and caught every run; the IMU puck
-recorded all afternoon too, though — as the data itself will testify
-below — not from where it was supposed to. Three sharp brake jabs at
-the grid before every run put the clock-sync signature into the
-recording, and they show up in the RaceBox trace exactly as designed.
+The RaceBox rode the roof at 25 Hz and caught every run; the IMU puck
+rode the center console, on the cupholder perimeter — though getting
+its data to admit it was aboard took a fight I'll get to. The plan's
+brake-jab sync ritual didn't happen — the day moved fast — but it
+turned out each run writes its own sync signature anyway: a launch
+spike and fifty-six seconds of unmistakable car dynamics.
 
 ## What the instruments turned out to be
 
@@ -466,7 +571,10 @@ plan's requirement (≥100 Hz to onboard storage, which covers the
 4–25 Hz secondary-ride band twice over), but "200 Hz logger" would be
 the brochure number, and this log doesn't do brochure numbers. The
 ingest code de-duplicates to the true effective rate before any
-spectrum gets computed.
+spectrum gets computed. The clock needed the same treatment: the
+frame-to-frame tick is a metronomic 5 ms, but the absolute rate runs
+about two percent slow and the offset re-arms at every power-on — what
+that nearly cost me is below.
 
 ## Timing the runs without timing equipment
 
@@ -509,38 +617,63 @@ The plan registered a prediction before any data existed: a
 percentile @@P95@@ g, peak @@MAX@@ g. The prediction wasn't just
 missed, it was cleared with room to spare — and per this project's
 standing rules, it stays in the text. Two honest caveats ride along:
-the RaceBox sits on the dash, so body roll leaks a few percent of
+the RaceBox sits on the roof, so body roll leaks a few percent of
 gravity into its lateral channel (the puck's roll angle will correct
 that before any number gets called final), and an autocross course
 rewards brief peaks, not skidpad steady-state.
 
 @@FIG_GG@@
 
-## The instrument that missed the bus
+## The clock that lied by two percent
 
-The ride-channel puck recorded faithfully all afternoon — 200 Hz
-frames, clean clock, healthy battery — and its storage says exactly
-where it spent the session: level and essentially motionless through
-the run windows (vertical axis pinned at 1.000 g; gyro at noise level
-for five of the six runs, one brief hand-scale wiggle during the
-last), with small handling motions only between runs. Nothing in it
-resembles car dynamics. It logged the paddock. The overnight VHB-mount step didn't happen in the event-day
-rush, and no checklist line caught it before the first launch. The
-sensor doesn't measure what it isn't bolted to; the per-session card
-now has a "puck is in the car and flashing" line, learned the honest
-way.
+My first pass at the puck's file said the sensor sat level and still
+through every single run window — for one bad hour the working theory
+was that it had spent the day in the paddock. It hadn't. It rode the
+console the whole session, and its own file proves it: six
+unmistakable ~56-second bursts of car dynamics, spaced exactly like
+the run schedule — just not where the timestamps said they should be.
+The puck's clock ticks a clean 5 ms per frame relative to itself, but
+its absolute rate runs about two percent slow, and every power-cycle
+re-arms the offset: by run 1 the file clock trailed GPS time by
+@@OFF1@@ seconds, and by run 6, @@OFF6@@. Cross-correlating the
+acceleration envelope against the RaceBox pins each file's clock to
+GPS (per-run correlation @@XCLO@@–@@XCHI@@, residuals inside
+±130 ms), and with the clock fixed the mount checks out end to end —
+puck lateral tracks GPS lateral at r = @@AYHI@@, longitudinal tracks
+longitudinal, yaw tracks yaw. Two lines joined the per-session card:
+confirm the puck is aboard and flashing, and never trust a logger's
+clock you haven't measured against GPS. The plan's brake-jab ritual —
+which never actually happened on day one — exists for exactly this
+failure mode; course runs turned out to carry a fingerprint loud
+enough to sync on without it. It stays in the protocol for recordings
+that don't, like the ride block's repeated passes.
 
-The cost is real: day one has no roll or ride channel. My strongest
-impression — written down the day after, not blind, because the
-per-run rating sheets also fell to the rush — was that Normal carried
-a lot more body roll, pitch, and yaw, while Sport+ felt far more
-planted and reactive. That stays an untested claim for now. I looked
-at whether the RaceBox's 25 Hz yaw channel could referee it and the
-answer is no: per-run transient-yaw numbers vary more with how hard
-each run was driven than with the mode switch, and dressing that up as
-a mode comparison would be exactly the kind of chart this project
-exists not to make. The roll question waits for the puck to actually
-ride along.
+## Did the seat of the pants tell the truth? Not so fast
+
+My recollection, written down the day after (the per-run blind sheets
+fell to the event-day rush, so this is memory and labeled as such):
+Normal had a lot more body roll, pitch, and yaw; Sport+ felt a lot
+more planted and reactive. With the clock fixed, the first channel
+that can referee is the puck's roll-rate gyro, run by run:
+
+@@FIG_ROLL@@
+
+The result refuses to flatter the impression. Raw roll-rate RMS is
+higher in Sport+, not lower — @@RS@@ °/s against @@RN@@ °/s, about
+@@RGAIN@@% more — and normalizing by how hard the car was actually
+being driven (roll rate per unit of lateral-acceleration rate) lands
+at a wash: @@NRM_N@@ in Normal, @@NRM_S@@ in Sport+. That doesn't
+mean the impression is wrong. It means roll *rate* is not roll
+*angle*: what a firmer damper map suppresses is how far the body
+leans and how it settles, while broadband roll-rate RMS mostly tracks
+the course and the driver — and the Sport+ runs were driven harder. A
+6-axis IMU's fused roll angle can't honestly separate body lean from
+sustained lateral acceleration mid-corner, so the angle-domain answer
+— the thing the seat actually feels — waits for matched transients
+and the ride block, where the inputs are controlled. Carrying a
+sensation across to the right number is the discipline this project
+exists to practice, and this is what it looks like when the first
+number you grab turns out to be the wrong one.
 
 ## What's next
 

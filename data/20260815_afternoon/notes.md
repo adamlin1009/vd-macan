@@ -54,9 +54,12 @@ High-g activity clusters (|g|>0.45): 590.7–646.8, 1005.0–1060.4,
 1423.3–1479.6, 1862.3–1918.8, 2222.4–2278.6, 2533.2–2589.0 s — the
 gates bracket each cluster with the final braking just past the finish.
 
-Brake-jab clusters (stationary long-g spikes) precede runs at t ≈ 569,
-989, 1408, 2200, 2510 s (~6 spikes each) + a 13-spike cluster at 2674 s —
-sync anchors for sync_runs. Grip-ceiling view (|lat g| while cornering):
+Stationary long-g spike clusters precede runs at t ≈ 569, 989, 1408,
+2200, 2510 s + a cluster at 2674 s — **NOT deliberate sync jabs (owner
+confirmed 2026-08-16: none were performed on day 1)**; staging /
+brake-pedal activity. Clock sync was done by run-envelope
+cross-correlation instead (see puck clock model below).
+Grip-ceiling view (|lat g| while cornering):
 p95 0.97, p99 1.02, max 1.14 — registered prediction was 0.75–0.85 g.
 
 ## Files
@@ -65,10 +68,16 @@ p95 0.97, p99 1.02, max 1.14 — registered prediction was 0.75–0.85 g.
   in mph, GForceX=long/GForceY=lat/GyroZ=yaw verified)
 - `puck_sd/WIT38–WIT41.TXT` — the puck's own storage covering the
   session (200 Hz frames, ~104 Hz effective acc; parse with
-  ingest_puck, dedupe=true for spectra). **CAUTION: the puck was NOT
-  aboard during the runs** — az_std ≤ 0.007 g and gyro ≤ 0.5 °/s in
-  run windows 1–5, hand-scale wiggle in run 6; it logged the paddock.
-  No roll/ride channel exists for this session.
+  ingest_puck, dedupe=true for spectra). **Puck WAS aboard: mounted on
+  the center console, cupholder perimeter, printed X forward (verified
+  empirically: ax↔GPS long, ay↔GPS lat r≤0.91, yaw r≤0.91). CLOCK
+  CAUTION: device timestamps run ~2% slow and the offset re-arms per
+  power-on** — trailing GPS by 131 s (run 1) → 181 s (run 6). Per-file
+  linear fits (t in s since RaceBox session t0): WIT39 OFF(t) = 118.4
+  + 0.01985·t; WIT40 OFF(t) = 128.4 + 0.02062·t; wall = device + OFF.
+  Roll-rate RMS per run [°/s]: 4.32, 4.81, 4.28, 4.59, 4.55, 4.96
+  (N mean 4.38, S+ mean 4.79; per unit ay-rate: 3.24 vs 3.28 — wash).
+  RaceBox mount: ROOF (not dash).
 - `app_capture/` — quick-look BLE captures (lossy; see shakedown.md
   channel discipline)
 - Full untouched card image in `../sd_dump_20260816/`
