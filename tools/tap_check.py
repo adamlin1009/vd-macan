@@ -286,6 +286,10 @@ def main():
     if raw is not None:
         dup = float(np.mean(np.all(np.diff(raw, axis=0) == 0, axis=1)))
         dup_note = ""
+        if meta.get("ble_capture"):
+            dup_note = (" — CAUTION: the app's .wplay writer repeats stale "
+                        "values (time advances, data lags); cross-check the "
+                        ".txt export, and trust only the SD file's number")
     else:
         d0 = np.all(np.diff(acc, axis=0) == 0, axis=1)
         dup = float(np.mean(d0))
