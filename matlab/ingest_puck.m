@@ -21,6 +21,7 @@ function [D, meta] = ingest_puck(path, opts)
 arguments
     path (1,1) string
     opts.rate (1,1) double = 200
+    opts.dedupe (1,1) logical = false   % drop repeated-value frames
 end
 
 fid = fopen(path, 'rb'); assert(fid > 0, "cannot open %s", path);
@@ -49,6 +50,21 @@ meta.dt_med_ms = 1000 * median(dts);
 meta.dt_p99_ms = 1000 * prctile(abs(dts - 1/opts.rate), 99);
 meta.gap_max_ms = 1000 * max(dts);
 meta.dup_frac = mean(all(diff(D.acc) == 0, 2));
+
+% Measured 2026-08-16 on venue SD files: the BT50 writes frames at the
+% configured 200 Hz on a clean 5 ms clock, but its fusion loop updates
+% acc ~104 Hz and gyro ~50 Hz, so ~48% of consecutive frames repeat all
+% values. dedupe=true keeps only frames where something changed — the
+% honest effective-rate series to resample for spectra. Leave false for
+% tap_test (it judges the frame stream itself).
+if opts.dedupe
+    keep = [true; any(diff(D.acc) ~= 0, 2) | any(diff(D.gyr) ~= 0, 2) ...
+            | any(diff(D.ang) ~= 0, 2)];
+    D = D(keep, :);
+    meta.n_dedup_dropped = meta.n - height(D);
+    meta.rate_effective = (height(D) - 1) / ...
+        max(seconds(D.t(end) - D.t(1)), eps);
+end
 end
 
 % ---------------------------------------------------------------------

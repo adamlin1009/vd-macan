@@ -1,0 +1,7 @@
+DataNum=00045
+File Size=0		//(0 ,12582912)
+Direction=0      //0:Horizontal 1:Vertical
+Acc Range=3    //0:2G 1:4G 2:8G 3:16G
+Gyro Range=3  //0:250deg/s 1:500deg/s 2:1000deg/s 3:2000deg/s
+Band Width=2  //0:256 Hz 1:188Hz 2:98Hz 3:42Hz 4:20Hz 5:10Hz 6:5Hz
+Rate=11        //0:0.1Hz 1:0.2Hz 2:0.5Hz 3:1Hz 4:2Hz 5:5Hz 6:10Hz 7:20Hz 8:50Hz 9:100Hz 10:125Hz 11:200Hz 12:1000Hz

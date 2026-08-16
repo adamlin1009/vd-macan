@@ -250,7 +250,7 @@ def main():
         span = np.nanmax(ts) - np.nanmin(ts)
         rate = (good.sum() - 1) / span if span > 1 else float("nan")
         dts = np.diff(ts[good])
-        mono = bool(np.all(dts >= -1e-9))
+        nback = int(np.sum(dts < 0))
         maxgap = float(np.max(dts)) if len(dts) else float("nan")
         p99 = float(np.percentile(np.abs(dts - 1.0 / args.rate), 99))
         err = abs(rate - args.rate) / args.rate
@@ -265,8 +265,15 @@ def main():
         checks.append(("true sample rate", rst,
                        f"{rate:.1f} Hz vs {args.rate:.0f} set "
                        f"({100*err:.1f}% off, span {span:.1f} s){note}"))
-        checks.append(("timestamps monotonic",
-                       "PASS" if mono else "FAIL", ""))
+        if nback == 0:
+            checks.append(("timestamps monotonic", "PASS", ""))
+        elif nback <= max(3, int(0.001 * len(dts))):
+            checks.append(("timestamps monotonic", "WARN",
+                           f"{nback} backward step(s) — RTC nudge(s); "
+                           f"ingest sorts/segments these"))
+        else:
+            checks.append(("timestamps monotonic", "FAIL",
+                           f"{nback} backward steps"))
         checks.append(("max gap",
                        "PASS" if maxgap <= 5 / args.rate else "WARN",
                        f"{1000*maxgap:.1f} ms (limit "

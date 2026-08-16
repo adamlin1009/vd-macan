@@ -88,11 +88,11 @@ learning and tire heat-drift land on both modes equally. One crisp
 steering input per element — hold, unwind; a decisive turn-in IS a
 step-steer. Brake straight, then turn, then throttle. Slaloms = the best
 per-mode instrument: constant throttle, symmetric rhythm. Sport Chrono
-drivetrain dial FIXED all day — only the PASM button changes. PSM/TC
-**off** (owner call 2026-08-15): same state every run, record the exact
-cluster indication in notes.md, and expect PSM to re-arm under hard
-braking (typical Porsche behavior) — a brake-zone intervention spike in
-the data is that, not the dampers. Same line every run; walk the course 2–3× before
+drivetrain dial FIXED all day — only the PASM button changes. PSM: what
+actually ran on day 1 was **PSM Sport** (owner-confirmed 2026-08-16, not
+fully off) — same state every run, record the exact cluster indication
+in notes.md; expect interventions to remain possible under hard braking
+and big yaw — a brake-zone spike in the data may be PSM, not dampers. Same line every run; walk the course 2–3× before
 run 1. **Last run of the day = the one limit run** (either mode, noted):
 that's the grip-ceiling / G-G datum testing the 0.75–0.85 g prediction —
 not part of the A/B. Mode into notes BEFORE the run; blind rating sheet
@@ -104,15 +104,20 @@ One folder per recording: `data/YYYYMMDD_run##_<config>/` with `puck.bin`
 (the WITn.TXT, renamed), `racebox.csv`, `notes.md`. Then
 `tap_check.py puck.bin` as a quick health pass before anything else reads it.
 
-**Channel discipline (learned from the 2026-08-15/16 exports):** both app
-channels are QUICK-LOOK only, each lossy in a different way. The .txt
-export has fresh sample values but BLE receive-burst timestamps (~30 ms
-clumps of ~4) and 2.5–6% transport loss. The .wplay has clean device-side
-5 ms timestamps but its writer repeats stale values (~47% duplicated acc,
-~74% gyro — an app artifact, not the sensor). Cross-checked 2026-08-16:
-the sensor itself produces ~190+ Hz of distinct samples on a clean 5 ms
-clock. The analysis channel is the device's own WITn.TXT (RecordStatus
-on), offloaded via File List or USB — nothing else.
+**Channel discipline (settled 2026-08-16 against the SD card itself):**
+the analysis channel is the device's own WITn.TXT — and USB-C **does**
+mount the card as a drive ("NO NAME"), so offload = plug in, copy, done.
+The SD ground truth: 28-byte 0x61 frames at an exact 200 Hz on a clean
+5 ms clock (p99 jitter 0.0 ms), BUT ~48% of consecutive frames repeat
+all values — the fusion loop updates acc ~104 Hz and gyro ~50 Hz while
+frames write at 200. That satisfies the plan's ≥100 Hz-to-storage
+requirement and covers the 4–25 Hz secondary-ride band; parse with
+`ingest_puck(..., dedupe=true)` for spectra. Files roll over at ~12 MB
+and a new file opens per power-on; occasional single RTC back-steps
+appear (ingest sorts them). The app's .txt export (fresh-looking values,
+burst timestamps, 2.5–6% loss) and .wplay (true device timestamps, stale
+values) are both quick-look only — the "fresh" .txt values are app-side
+cosmetics, disagreeing with the frames the device actually stores.
 
 ## RaceBox (landed + configured 2026-08-14)
 
