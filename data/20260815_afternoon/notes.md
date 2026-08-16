@@ -16,17 +16,23 @@ dataset; the morning session (10:16) is excluded.**
 ## Runs (GPS virtual gates, from split_runs on racebox.csv)
 
 Start gate 33.6525677, -117.3018512 (anchor spread 0.7 m over 6 runs);
-finish gate 33.6527594, -117.3033308 (spread 11.7 m), defined 5 m before
-terminal brake onset. Session t0 = 14:52:07.440 local.
+finish gate 33.6527631, -117.3033518 (spread 4.4 m), 5 m before the
+onset of each run's FINAL braking (owner: course is point-to-point,
+finish before the big final brake; times owner-corroborated ~51-52 s).
+Session t0 = 14:52:07.440 local.
 
 | run | PASM | start t [s] | gate-to-gate [s] | vmax [mph] | lat g max | brake g max |
 |----|--------|--------|-------|------|------|------|
-| 1 | Normal | 590.73 | 19.63 | 53.3 | 1.05 | 0.98 |
-| 2 | Sport+ | 1005.14 | 19.81 | 57.1 | 1.09 | 0.82 |
-| 3 | Normal | 1423.38 | 19.87 | 55.1 | 1.06 | 0.87 |
-| 4 | Sport+ | 1862.47 | 19.84 | 55.3 | 1.04 | 0.84 |
-| 5 | Normal | 2222.56 | 19.57 | 53.5 | 1.06 | 0.79 |
-| 6 | Sport+ | 2533.23 | 19.26 | 55.6 | 1.14 | 0.87 |
+| 1 | Normal | 590.73 | 54.82 | 53.3 | 1.05 | 0.98 |
+| 2 | Sport+ | 1005.14 | 53.61 | 57.1 | 1.09 | 0.82 |
+| 3 | Normal | 1423.38 | 53.76 | 55.1 | 1.06 | 0.87 |
+| 4 | Sport+ | 1862.47 | 53.98 | 55.3 | 1.04 | 0.84 |
+| 5 | Normal | 2222.56 | 53.62 | 53.5 | 1.06 | 0.79 |
+| 6 | Sport+ | 2533.23 | 52.83 | 55.6 | 1.14 | 0.87 |
+
+High-g activity clusters (|g|>0.45): 590.7–646.8, 1005.0–1060.4,
+1423.3–1479.6, 1862.3–1918.8, 2222.4–2278.6, 2533.2–2589.0 s — the
+gates bracket each cluster with the final braking just past the finish.
 
 Brake-jab clusters (stationary long-g spikes) precede runs at t ≈ 569,
 989, 1408, 2200, 2510 s (~6 spikes each) + a 13-spike cluster at 2674 s —
