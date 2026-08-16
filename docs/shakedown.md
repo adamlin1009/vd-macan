@@ -104,6 +104,13 @@ One folder per recording: `data/YYYYMMDD_run##_<config>/` with `puck.bin`
 (the WITn.TXT, renamed), `racebox.csv`, `notes.md`. Then
 `tap_check.py puck.bin` as a quick health pass before anything else reads it.
 
+**Channel discipline (learned from 2026-08-15 exports):** the app's live
+.txt export is a QUICK-LOOK channel only — its timestamps are BLE
+receive-bursts (~30 ms clumps of ~4 samples) and ~4–6% of samples drop
+in transport. Fine for eyeballing; not for spectra. The analysis channel
+is the device's own WITn.TXT (RecordStatus on), offloaded via File List
+or USB — it carries the device-side timebase.
+
 ## RaceBox (landed + configured 2026-08-14)
 
 Remaining before venue day: record one short outdoor mini-session (it

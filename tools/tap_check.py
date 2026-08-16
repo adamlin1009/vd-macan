@@ -10,7 +10,13 @@ Accepted inputs, auto-detected:
      a. standard 11-byte frames  0x55 [0x50..0x5A] d0..d7 cksum
      b. flag frames              0x55 0x61 + 18 data bytes (+ optional
                                  8 time bytes YY MM DD HH MN SS MSL MSH)
-  2. App text export (.txt/.csv): numeric columns incl. ax ay az.
+  2. App text export (.txt/.csv): either the headered 23-column export
+     (time, DeviceName, AccX(g)..AngleZ(°), ...) or any numeric table
+     whose first 9 numeric columns are acc/gyro/angle.
+
+App exports are recognized as BLE receive-stamped (timestamps clump in
+~30 ms bursts): they get a span-rate check only, with the reminder that
+the SD-card file carries the authoritative timebase.
 
 Usage:
   python3 tap_check.py WIT1.TXT [--rate 200] [--png report.png]
@@ -48,7 +54,7 @@ def _decode_time(b):
 
 
 def parse_standard(buf):
-    """Standard checksummed 11-byte frames -> dict of sample arrays."""
+    """Standard checksummed 11-byte frames -> list of sample dicts."""
     i, n = 0, len(buf)
     rows, cur_t, bad = [], None, 0
     cur = None
@@ -91,7 +97,6 @@ def parse_flag61(buf):
     n = len(buf)
     while i + stride <= n:
         if buf[i] != 0x55 or buf[i + 1] != 0x61:
-            # resync
             j = buf.find(b"\x55\x61", i)
             if j < 0:
                 break
@@ -112,9 +117,44 @@ def parse_flag61(buf):
 
 
 def parse_text(text):
-    """App export: numeric columns, expects ax ay az somewhere."""
+    """App export. Headered 23-column layout preferred; numeric fallback."""
+    lines = text.splitlines()
+    if not lines:
+        return None
     rows = []
-    for line in text.splitlines():
+    hdr = [h.strip().lower() for h in lines[0].replace(",", "\t").split("\t")]
+
+    def col(prefix):
+        for i, h in enumerate(hdr):
+            if h.startswith(prefix):
+                return i
+        return None
+
+    ia, ig, an, it = col("accx"), col("asx"), col("anglex"), col("time")
+    if ia is not None and ig is not None and an is not None:
+        for line in lines[1:]:
+            p = line.replace(",", "\t").split("\t")
+            if len(p) <= max(ia + 2, ig + 2, an + 2):
+                continue
+            try:
+                row = {"t": None,
+                       "acc_g": [float(p[ia]), float(p[ia + 1]),
+                                 float(p[ia + 2])],
+                       "gyr_d": [float(p[ig]), float(p[ig + 1]),
+                                 float(p[ig + 2])],
+                       "ang_d": [float(p[an]), float(p[an + 1]),
+                                 float(p[an + 2])]}
+            except ValueError:
+                continue
+            if it is not None:
+                try:
+                    row["t"] = dt.datetime.fromisoformat(p[it])
+                except ValueError:
+                    pass
+            rows.append(row)
+        return rows if len(rows) >= 10 else None
+
+    for line in lines:
         parts = line.replace(",", "\t").split("\t")
         nums = []
         for p in parts:
@@ -135,7 +175,7 @@ def load(path):
     if head and printable / len(head) > 0.9:
         rows = parse_text(buf.decode("utf-8", "replace"))
         if rows:
-            return rows, {"format": "text", "bad_frames": 0}
+            return rows, {"format": "text-export", "bad_frames": 0}
     std_rows, bad = parse_standard(buf)
     f61_rows = parse_flag61(buf)
     if f61_rows and len(f61_rows) > len(std_rows):
@@ -168,9 +208,38 @@ def main():
     times = [r["t"] for r in rows]
     have_t = sum(t is not None for t in times)
     checks = []   # (name, PASS/WARN/FAIL, detail)
+    dts = []
 
-    # --- true rate + timestamp health ---------------------------------
+    shared = 0.0
     if have_t > n * 0.5:
+        tv = [t for t in times if t is not None]
+        shared = float(np.mean([a == b for a, b in zip(tv[1:], tv[:-1])]))
+
+    # --- rate + timestamp health --------------------------------------
+    if have_t > n * 0.5 and shared > 0.30:
+        # BLE receive-stamped app export: bursts share stamps
+        ts = np.array([(t - times[0]).total_seconds() if t else np.nan
+                       for t in times])
+        good = ~np.isnan(ts)
+        span = np.nanmax(ts) - np.nanmin(ts)
+        rate = (good.sum() - 1) / span if span > 1 else float("nan")
+        err = abs(rate - args.rate) / args.rate
+        dts = np.diff(ts[good])
+        pos = dts[dts > 0]
+        checks.append(("mean rate over span",
+                       "PASS" if err <= 0.03 else "WARN",
+                       f"{rate:.1f} Hz vs {args.rate:.0f} set "
+                       f"({100*err:.1f}% off) — shortfall on an app export "
+                       f"is usually BLE transport loss, not the sensor"))
+        checks.append(("timestamps", "WARN",
+                       f"receive-stamped bursts: {100*shared:.0f}% of rows "
+                       f"share a stamp, burst gap median "
+                       f"{1000*np.median(pos):.0f} ms, max "
+                       f"{1000*np.max(dts):.0f} ms — app-export time is a "
+                       f"transport artifact; the SD-card WITn.TXT carries "
+                       f"the real timebase"))
+        t_s = np.where(good, ts, np.nan)
+    elif have_t > n * 0.5:
         ts = np.array([(t - times[0]).total_seconds() if t else np.nan
                        for t in times])
         good = ~np.isnan(ts)
@@ -205,13 +274,24 @@ def main():
     # --- duplicate-sample fraction (bandwidth resampling detector) ----
     if raw is not None:
         dup = float(np.mean(np.all(np.diff(raw, axis=0) == 0, axis=1)))
+        dup_note = ""
     else:
-        dup = float(np.mean(np.all(np.diff(acc, axis=0) == 0, axis=1)))
+        d0 = np.all(np.diff(acc, axis=0) == 0, axis=1)
+        dup = float(np.mean(d0))
+        gyr = np.array([r.get("gyr_d", [0, 0, 0]) for r in rows], float)
+        moving = ((np.abs(np.linalg.norm(acc, axis=1) - 1.0) > 0.05)
+                  | (np.abs(gyr).max(axis=1) > 5))
+        mi = moving[:-1] & moving[1:]
+        if mi.sum() > 100:
+            dup = float(np.mean(d0[mi]))
+            dup_note = " (measured during motion; rounded text collides at rest)"
+        else:
+            dup_note = " (rounded text export, mostly at rest — inflated)"
     st = "PASS" if dup <= 0.20 else ("WARN" if dup <= 0.55 else "FAIL")
     checks.append(("duplicate consecutive samples", st,
-                   f"{100*dup:.1f}% (>=50% means bandwidth is limiting: "
-                   f"raise Band Width to 98 Hz+, or accept effective "
-                   f"{args.rate/2:.0f} Hz)"))
+                   f"{100*dup:.1f}%{dup_note} (>=50% means bandwidth is "
+                   f"limiting: raise Band Width to 98 Hz+, or accept "
+                   f"effective {args.rate/2:.0f} Hz)"))
 
     # --- tap spikes ---------------------------------------------------
     az = acc[:, 2] - np.median(acc[:, 2])
@@ -252,9 +332,9 @@ def main():
           f"{meta['bad_frames']} bad frames")
     width = max(len(c[0]) for c in checks)
     fail = False
-    for name, st, detail in checks:
-        fail |= st == "FAIL"
-        print(f"  [{st:4s}] {name:<{width}}  {detail}")
+    for name, stt, detail in checks:
+        fail |= stt == "FAIL"
+        print(f"  [{stt:4s}] {name:<{width}}  {detail}")
     print("VERDICT:", "FAIL — do not trust spectra yet" if fail else
           "PASS — logger cleared for the ride block")
 
@@ -267,8 +347,8 @@ def main():
         if peaks:
             axes[0].plot(np.asarray(t_s)[peaks], acc[peaks, 2], "rx")
         axes[0].set(xlabel="t [s]", ylabel="az [g]", title="vertical accel")
-        if have_t > n * 0.5 and len(dts):
-            axes[1].hist(1000 * dts, bins=100)
+        if len(dts):
+            axes[1].hist(1000 * np.asarray(dts), bins=100)
             axes[1].set(xlabel="dt [ms]", ylabel="count",
                         title="sample intervals")
         fig.tight_layout()
