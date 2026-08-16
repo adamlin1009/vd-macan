@@ -10,25 +10,45 @@ dataset; the morning session (10:16) is excluded.**
   run 5 Normal · run 6 Sport+**
 - Powertrain mode: **Sport+** (constant all runs)
 - PSM: **Sport** (not fully off)
-- Pressures cold/hot, fuel, ambient, surface: TODO owner
-- Blind rating sheets: TODO owner (attach or transcribe per run)
+- Pressures: set **37/40 F/R before the session** with the Jaco dial
+  gauge (the project's reference gauge). TPMS read 36/39 at session
+  start (≈ −1 psi vs gauge, both axles — consistent offset, deltas
+  unaffected) and climbed progressively to **40/42 F/R** by session end
+  (+4/+3 psi build).
+- Fuel: ~5/8 tank at start → ~1/2 at end (within the ¼–¾ convention).
+- Ambient/surface: TODO owner.
+
+## Subjective impressions (owner, recalled 2026-08-16 — post-session,
+## non-blind; per-run blind sheets were not filled on day 1)
+
+- **Normal:** "a lot more body roll, pitch, and yaw — but the car still
+  drove nicely."
+- **Sport+:** "a lot more planted and reactive."
+
+These are the claims the objective transients must test: Normal should
+show larger roll/pitch rates (puck gyrX/gyrY) and larger yaw overshoot /
+slower settling (RaceBox GyroZ via stepsteer_metrics on course
+transients); "planted" should appear as higher damping in both.
 
 ## Runs (GPS virtual gates, from split_runs on racebox.csv)
 
-Start gate 33.6525677, -117.3018512 (anchor spread 0.7 m over 6 runs);
-finish gate 33.6527631, -117.3033518 (spread 4.4 m), 5 m before the
-onset of each run's FINAL braking (owner: course is point-to-point,
-finish before the big final brake; times owner-corroborated ~51-52 s).
-Session t0 = 14:52:07.440 local.
+Gates CALIBRATED to owner-remembered official times (run 5 ≈ 52.0,
+run 6 ≈ 51.1; rms fit 0.11 s): geometric anchors (start = v-crossing
+after launch, spread 0.7 m; finish = 5 m before terminal brake onset,
+spread 4.4 m) shifted start +2 m downstream and finish 23 m earlier —
+the car crosses the real finish flat-out ~1 s before braking. In
+split_runs: start_shift_m=2.0, finish_shift_m=23.0 for this session.
+Calibrated start gate 33.6525529, -117.3018635; finish 33.6527783,
+-117.3035996. Session t0 = 14:52:07.440 local.
 
-| run | PASM | start t [s] | gate-to-gate [s] | vmax [mph] | lat g max | brake g max |
+| run | PASM | start t [s] | run time [s] | vmax [mph] | lat g max | brake g max |
 |----|--------|--------|-------|------|------|------|
-| 1 | Normal | 590.73 | 54.82 | 53.3 | 1.05 | 0.98 |
-| 2 | Sport+ | 1005.14 | 53.61 | 57.1 | 1.09 | 0.82 |
-| 3 | Normal | 1423.38 | 53.76 | 55.1 | 1.06 | 0.87 |
-| 4 | Sport+ | 1862.47 | 53.98 | 55.3 | 1.04 | 0.84 |
-| 5 | Normal | 2222.56 | 53.62 | 53.5 | 1.06 | 0.79 |
-| 6 | Sport+ | 2533.23 | 52.83 | 55.6 | 1.14 | 0.87 |
+| 1 | Normal | 591.06 | 53.11 | 53.3 | 1.05 | 0.98 |
+| 2 | Sport+ | 1005.44 | 51.98 | 57.1 | 1.09 | 0.82 |
+| 3 | Normal | 1423.68 | 52.12 | 55.1 | 1.06 | 0.87 |
+| 4 | Sport+ | 1862.76 | 52.33 | 55.3 | 1.04 | 0.84 |
+| 5 | Normal | 2222.85 | 51.90 | 53.5 | 1.06 | 0.79 |
+| 6 | Sport+ | 2533.54 | 51.21 | 55.6 | 1.14 | 0.87 |
 
 High-g activity clusters (|g|>0.45): 590.7–646.8, 1005.0–1060.4,
 1423.3–1479.6, 1862.3–1918.8, 2222.4–2278.6, 2533.2–2589.0 s — the

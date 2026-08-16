@@ -31,7 +31,13 @@ arguments
     opts.brake_g (1,1) double = 0.45
     opts.backup_m (1,1) double = 5.0
     opts.gate_width_m (1,1) double = 12.0
+    opts.start_shift_m (1,1) double = 0    % move start gate downstream
+    opts.finish_shift_m (1,1) double = 0   % move finish gate upstream
 end
+% Shifts calibrate the geometric anchors to real timing-light positions
+% (fit to remembered official times). 2026-08-15 afternoon session:
+% start_shift_m = 2.0, finish_shift_m = 23.0 (rms 0.11 s vs officials) —
+% the car crosses the real finish flat-out ~1 s before terminal braking.
 
 R = 6371000;
 ts = seconds(rb.t - rb.t(1));
@@ -84,6 +90,8 @@ end
 
 P0 = median(sa, 1); u0 = median(sd, 1); u0 = u0 / norm(u0);
 P1 = median(fa, 1); u1 = median(fd, 1); u1 = u1 / norm(u1);
+P0 = P0 + opts.start_shift_m * u0;
+P1 = P1 - opts.finish_shift_m * u1;
 gates.start = to_ll(P0); gates.start_dir = u0;
 gates.finish = to_ll(P1); gates.finish_dir = u1;
 gates.start_spread_m = max(hypot(sa(:,1)-P0(1), sa(:,2)-P0(2)));
