@@ -70,8 +70,11 @@ keeps failing (from the plan): Movella DOT-class replacement.
 ## Per-session card (track)
 
 1. Cold pressures to placard, log them (same gauge, eye level).
-2. Puck on ≥ 1 min before rolling (RTC + gyro settle). Confirm blue
-   flash (or tick RecordStatus from the phone if step 3 above said so).
+2. **Puck IS IN THE CAR, mounted, blue LED flashing — physically verify
+   before the first launch.** (Day-1 lesson, 2026-08-15: the puck
+   recorded the paddock all session; the SD data proves it never rode
+   along. The sensor doesn't measure what it isn't bolted to.) Puck on
+   ≥ 1 min before rolling (RTC + gyro settle).
 3. RaceBox on, wait for satellite fix, start recording.
 4. **Three sharp stationary brake jabs** — the clock-sync signature.
 5. Drive. Autocross: recordings restart per run, so jabs per run; ride

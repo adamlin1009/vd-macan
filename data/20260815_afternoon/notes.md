@@ -65,7 +65,10 @@ p95 0.97, p99 1.02, max 1.14 — registered prediction was 0.75–0.85 g.
   in mph, GForceX=long/GForceY=lat/GyroZ=yaw verified)
 - `puck_sd/WIT38–WIT41.TXT` — the puck's own storage covering the
   session (200 Hz frames, ~104 Hz effective acc; parse with
-  ingest_puck, dedupe=true for spectra)
+  ingest_puck, dedupe=true for spectra). **CAUTION: the puck was NOT
+  aboard during the runs** — az_std ≤ 0.007 g and gyro ≤ 0.5 °/s in
+  run windows 1–5, hand-scale wiggle in run 6; it logged the paddock.
+  No roll/ride channel exists for this session.
 - `app_capture/` — quick-look BLE captures (lossy; see shakedown.md
   channel discipline)
 - Full untouched card image in `../sd_dump_20260816/`
