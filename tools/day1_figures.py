@@ -626,56 +626,61 @@ def main():
 POST_TEMPLATE = """---
 title: "Six runs, two damper maps: first data from Storm Stadium"
 date: "2026-08-16"
-summary: "Day one of the venue weekend put the instrumentation plan through first contact with reality: six autocross runs alternating PASM Normal and Sport+, a grip ceiling that cleared my registered prediction by a wide margin, and one instrumentation lesson learned the honest way."
+summary: "Day one at Storm Stadium: six autocross runs alternating PASM Normal and Sport+, a grip ceiling that cleared my registered prediction with room to spare, and an instrument clock that nearly convinced me my sensor spent the day in the paddock."
 ---
 
-The plan said: enter an autocross weekend, alternate the damper modes
-run by run, and let the loggers ride along. Day one at Storm Stadium
-(SCCA Cal Club, Lake Elsinore) did exactly that. Six runs in the
-afternoon session, PASM alternating Normal / Sport+ starting with
-Normal, powertrain fixed in Sport+ the whole time, PSM in Sport. Cold
-pressures set to placard 37/40 with the reference dial gauge before the
-session; the TPMS read 36/39 at the start (a consistent −1 psi against
-the gauge on both axles) and climbed to 40/42 by the end. Fuel ran from
-about 5/8 to 1/2 tank.
+The plan said: enter an autocross, alternate the damper modes, let the
+loggers ride. Day one at Storm Stadium (SCCA Cal Club, Lake Elsinore)
+did exactly that.
 
-The RaceBox rode the roof at 25 Hz and caught every run; the AHRS IMU
-rode the center console, on the cupholder perimeter — though getting
-its data to admit it was aboard took a fight I'll get to. The plan's
-brake-jab sync ritual didn't happen — the day moved fast — but it
-turned out each run writes its own sync signature anyway: a launch
-spike and fifty-six seconds of unmistakable car dynamics.
+Six runs in the afternoon session. PASM alternating Normal / Sport+,
+starting with Normal. Powertrain fixed in Sport+ all day. PSM in
+Sport. Cold pressures set to placard 37/40 with the reference dial
+gauge. The TPMS read 36/39 at the start — a consistent −1 psi against
+the gauge on both axles — and climbed to 40/42 by the end. Fuel ran
+from about 5/8 tank to 1/2.
+
+The RaceBox rode the roof and caught every run at 25 Hz. The AHRS IMU
+rode the center console. Getting its data to admit that took a fight;
+I'll get to it. The planned brake-jab sync ritual didn't happen — the
+day moved fast. It turned out not to matter. Each run writes its own
+sync signature: a launch spike and fifty-six seconds of unmistakable
+car dynamics.
 
 ## What the instruments turned out to be
 
-Shakedown honesty, because the numbers only mean something if the
-instrument is characterized. The IMU writes frames at exactly 200 Hz
-on a clean 5 ms clock — but underneath, its fusion loop updates the
-accelerometer at about 104 Hz and the gyro at about 50 Hz, so roughly
-half the frames repeat the previous values. That still clears the
-plan's requirement (≥100 Hz to onboard storage, which covers the
-4–25 Hz secondary-ride band twice over), but "200 Hz logger" would be
-the brochure number, and this log doesn't do brochure numbers. The
-ingest code de-duplicates to the true effective rate before any
-spectrum gets computed. The clock needed the same treatment: the
-frame-to-frame tick is a metronomic 5 ms, but the absolute rate runs
-about two percent slow and the offset re-arms at every power-on — what
-that nearly cost me is below.
+Shakedown honesty first. Numbers only mean something when the
+instrument is characterized.
+
+The IMU writes frames at exactly 200 Hz. Underneath, its fusion loop
+updates the accelerometer at about 104 Hz and the gyro at about
+50 Hz. Half the frames are copies. That still clears the plan's
+requirement — 100 Hz to onboard storage covers the 4–25 Hz
+secondary-ride band twice over. But "200 Hz logger" is the brochure
+number, and this log doesn't do brochure numbers. The ingest code
+de-duplicates before any spectrum gets computed.
+
+The clock needed the same treatment. The tick is a metronomic 5 ms.
+The absolute rate runs about two percent slow. The offset re-arms at
+every power-on. What that nearly cost me is below.
 
 ## Timing the runs without timing equipment
 
-The course is point-to-point and the event's timing lights aren't in my
-data — but the GPS is. Each launch shows up as a hard acceleration from
-standstill and each finish as the run's last sustained braking, so I
-built virtual gates from the six trajectories: the start anchor is
-where speed first crosses 5 m/s after launch (the six anchors landed
-within 0.7 m of each other), and the finish anchor sits just before the
-terminal braking (4.4 m spread). Two remembered official times
-calibrated the pair of gates along the course — the fit put the start
-beam almost exactly at my geometric anchor and the finish 23 m earlier
-than the braking point, which is just the reminder that you cross the
-lights flat-out and brake afterward. After calibration the gate times
-reproduce the officials to about a tenth.
+The course is point-to-point, and the event's timing lights aren't in
+my data. The GPS is.
+
+Each launch is a hard acceleration from standstill. Each finish is
+the run's last sustained braking. So I built virtual gates from the
+six trajectories. The start anchor sits where speed first crosses
+5 m/s after launch; the six anchors landed within 0.7 m of each
+other. The finish anchor sits just before the terminal braking, with
+a 4.4 m spread.
+
+Two remembered official times calibrated the gates along the course.
+The fit put the start beam almost exactly at my geometric anchor. It
+put the finish 23 m before the braking point — you cross the lights
+flat-out and brake after. Calibrated, the gate times reproduce the
+officials to about a tenth.
 
 @@FIG_MAP@@
 
@@ -685,12 +690,12 @@ reproduce the officials to about a tenth.
 |---|---|---|---|---|
 @@TABLE@@
 
-Sport+ holds the day's best time and the mode averages sit about half
-a second apart — though run 4 broke the pattern, coming in slower
-than the Normal runs on either side of it, and three runs per mode is
-thin statistics. Either way the margin is tenths on a 52-second
-course, while from the seat the two modes felt like different cars.
-That tension between "feels transformed" and "barely faster" is the
+Sport+ holds the day's best time. The mode averages sit about half a
+second apart. Run 4 broke the pattern — slower than the Normal runs
+on either side of it. Three runs per mode is thin statistics.
+
+Either way, the margin is tenths on a 52-second course — and from the
+seat, the two modes felt like different cars. That tension is the
 whole reason this project pairs subjective ratings with instruments.
 
 @@FIG_TIMES@@
@@ -700,141 +705,160 @@ whole reason this project pairs subjective ratings with instruments.
 ## The grip ceiling prediction is dead — good
 
 The plan registered a prediction before any data existed: a
-2.2-ton-class SUV on touring all-seasons should top out around
-0.75–0.85 g. Measured, while cornering hard across all six runs: 95th
-percentile @@P95@@ g, peak @@MAX@@ g. The prediction wasn't just
-missed, it was cleared with room to spare — and per this project's
-standing rules, it stays in the text. Two honest caveats ride along:
-the RaceBox sits on the roof, so body roll leaks a few percent of
-gravity into its lateral channel (the IMU's roll angle will correct
-that before any number gets called final), and an autocross course
-rewards brief peaks, not skidpad steady-state.
+2.2-ton-class SUV on touring all-seasons tops out around 0.75–0.85 g.
+
+Measured, cornering hard across all six runs: 95th percentile
+@@P95@@ g. Peak @@MAX@@ g.
+
+The prediction wasn't missed. It was cleared with room to spare. Per
+this project's standing rules, it stays in the text.
+
+Two caveats ride along. The RaceBox sits on the roof, so body roll
+leaks gravity into its lateral channel — the correction lands two
+sections down. And an autocross rewards brief peaks, not skidpad
+steady-state.
 
 @@FIG_GG@@
 
 ## The clock that lied by two percent
 
-My first pass at the IMU's file said the sensor sat level and still
-through every single run window — for one bad hour the working theory
-was that it had spent the day in the paddock. It hadn't. It rode the
-console the whole session, and its own file proves it: six
-unmistakable ~56-second bursts of car dynamics, spaced exactly like
-the run schedule — just not where the timestamps said they should be.
-The IMU's clock ticks a clean 5 ms per frame relative to itself, but
-its absolute rate runs about two percent slow, and every power-cycle
-re-arms the offset: by run 1 the file clock trailed GPS time by
-@@OFF1@@ seconds, and by run 6, @@OFF6@@. Cross-correlating the
-acceleration envelope against the RaceBox pins each file's clock to
-GPS (per-run correlation @@XCLO@@–@@XCHI@@, residuals inside
-±130 ms), and with the clock fixed the mount checks out end to end —
-IMU lateral tracks GPS lateral at r = @@AYHI@@, longitudinal tracks
-longitudinal, yaw tracks yaw. Two lines joined the per-session card:
-confirm the IMU is aboard and flashing, and never trust a logger's
-clock you haven't measured against GPS. The plan's brake-jab ritual —
-which never actually happened on day one — exists for exactly this
-failure mode; course runs turned out to carry a fingerprint loud
-enough to sync on without it. It stays in the protocol for recordings
-that don't, like the ride block's repeated passes.
+My first pass at the IMU file said the sensor sat still through every
+run window. For one bad hour, the working theory was that it had
+spent the day in the paddock.
+
+It hadn't. It rode the console all session, and its own file proves
+it: six unmistakable ~56-second bursts of car dynamics, spaced
+exactly like the run schedule. Just not where the timestamps said.
+
+The IMU's clock ticks a clean 5 ms per frame, relative to itself. Its
+absolute rate runs about two percent slow, and every power cycle
+re-arms the offset. By run 1 the file clock trailed GPS time by
+@@OFF1@@ seconds. By run 6, @@OFF6@@.
+
+The fix: cross-correlate the acceleration envelope against the
+RaceBox. Each file snaps to GPS time — per-run correlation
+@@XCLO@@–@@XCHI@@, residuals inside ±130 ms. With the clock fixed,
+the mount checks out end to end. IMU lateral tracks GPS lateral at
+r = @@AYHI@@. Longitudinal tracks longitudinal. Yaw tracks yaw.
+
+Two lines joined the per-session card. Confirm the IMU is aboard and
+flashing. Never trust a logger's clock you haven't measured against
+GPS.
+
+The brake-jab ritual exists for exactly this failure mode, and it
+never actually happened on day one. Course runs turned out to carry a
+fingerprint loud enough to sync on without it. It stays in the
+protocol for recordings that don't — like the ride block's repeated
+passes.
 
 ## Did the seat of the pants tell the truth? Not so fast
 
-My recollection, written down the day after (the per-run blind sheets
-fell to the event-day rush, so this is memory and labeled as such):
-Normal had a lot more body roll, pitch, and yaw; Sport+ felt a lot
-more planted and reactive. With the clock fixed, the first channel
-that can referee is the IMU's roll-rate gyro, run by run:
+My recollection, written down the day after: Normal had a lot more
+body roll, pitch, and yaw. Sport+ felt a lot more planted and
+reactive. (The per-run blind sheets fell to the event-day rush. This
+is memory, and it's labeled as such.)
+
+With the clock fixed, the first channel that can referee is the IMU's
+roll-rate gyro, run by run:
 
 @@FIG_ROLL@@
 
-The result refuses to flatter the impression — and then rewards a
-closer reading of it. Raw roll-rate RMS is higher in Sport+, not
-lower: @@RS@@ °/s against @@RN@@ °/s, about @@RGAIN@@% more, and
-normalizing by how hard the car was actually being driven (roll rate
-per unit of lateral-acceleration rate) lands at a wash — @@NRM_N@@ in
-Normal, @@NRM_S@@ in Sport+. But "body roll" was always two claims
-wearing one phrase. The lean the seat complains about is roll *angle*
-— how far the body heels over and how it settles — and a rate gyro
-doesn't measure that, while a 6-axis IMU's fused angle can't honestly
-separate lean from sustained lateral acceleration mid-corner. The
-*rate* side is where "planted and reactive" lives, and there the
-number makes physical sense — doubly so on this car. The steady-state
-lean budget is set by springs, anti-roll bars, track width, and CG
-height, all stock here and none of them touched by PASM; a damper
-can't hold the body up, it can only decide how fast the lean develops
-and whether it overshoots on the way. So the mode switch shouldn't
-much change how far this car rolls once settled — it changes how the
-roll *happens*, and a firmer map that makes the body track its inputs
-faster generates *more* roll rate, not less. That is the roll version
-of this plan's registered prediction: the modes should separate in
-the transients, not the steady-state numbers. Higher rate RMS in
-Sport+ is consistent with exactly that, tangled with the other honest
-explanation that I drove the Sport+ runs harder. Separating "the car responds faster" from "the driver
-asked for more" takes matched inputs — step-steers at fixed speed,
-and the ride block, where the road does the asking — and the
-angle-domain lean question waits for the same. Carrying a sensation
-across to the right number is the discipline this project exists to
-practice; this is what it looks like mid-translation.
+The result refuses to flatter the impression — then rewards a closer
+reading of it.
+
+Raw roll-rate RMS is higher in Sport+, not lower: @@RS@@ °/s against
+@@RN@@ °/s, about @@RGAIN@@% more. Normalized by how hard the car was
+actually driven — roll rate per unit of lateral-acceleration rate —
+it lands at a wash: @@NRM_N@@ in Normal, @@NRM_S@@ in Sport+.
+
+But "body roll" was always two claims wearing one phrase.
+
+The lean the seat complains about is roll *angle* — how far the body
+heels over and how it settles. A rate gyro doesn't measure that. A
+6-axis IMU's fused angle can't honestly separate lean from sustained
+cornering either.
+
+The *rate* side is where "planted and reactive" lives, and there the
+number makes sense — doubly so on this car. Springs, anti-roll bars,
+track width, and CG height set the lean budget. All stock here. None
+of them touched by PASM. A damper can't hold the body up. It can only
+decide how fast the lean develops and whether it overshoots on the
+way.
+
+So the mode switch shouldn't much change how far this car rolls once
+settled. It changes how the roll *happens*. A firmer map makes the
+body track its inputs faster — more roll rate, not less. That is the
+roll version of this plan's registered prediction: the modes separate
+in the transients, not the steady-state numbers.
+
+Higher rate RMS in Sport+ is consistent with exactly that. It is also
+tangled with an honest confound: I drove the Sport+ runs harder.
+Separating "the car responds faster" from "the driver asked for more"
+takes matched inputs — step-steers at fixed speed, and the ride
+block, where the road does the asking.
+
+Carrying a sensation across to the right number is the discipline
+this project exists to practice. This is what it looks like
+mid-translation.
 
 ## Wringing the dataset: five derivations, one survivor
 
-With the clock solved I went hunting for everything else these two
-loggers could be made to say. Five derived analyses; one produced a
-number I'll stand behind, and four failed in ways worth recording.
+With the clock solved, I went hunting for everything else these two
+loggers could be made to say. Five derived analyses. One produced a
+number I'll stand behind. Four failed in ways worth recording.
 
 The survivor is a roll sensor built out of disagreement. The
-accelerometer measures true lateral acceleration *plus* gravity
-leaking through the roll angle; speed times yaw rate measures true
-lateral acceleration alone. Their difference, at quasi-steady
-cornering samples, is the roll angle — no roll sensor involved, one
-device, immune to the clock saga. Regressed against lateral g, run by
-run:
+accelerometer measures cornering force plus gravity leaking through
+the roll angle. Speed times yaw rate measures cornering force alone.
+Their difference, at quasi-steady cornering samples, is the roll
+angle. No roll sensor involved. One device. Immune to the clock saga.
 
 @@FIG_RGRAD@@
 
 The result surprised me. **Normal: @@RGN@@ °/g** (per-run
-@@RGNLO@@–@@RGNHI@@); **Sport+: @@RGS@@ °/g** (@@RGSLO@@–@@RGSHI@@)
-— the ranges don't touch: every Normal run leaned more per g than
-every Sport+ run. Read carefully, though, because a true steady-state
-gradient *cannot* split on stock springs and bars — that's the whole
-argument above. What this measures is that an autocross never offers
-truly steady samples: even the calmest windows carry residual roll
-rate, and roll rate is exactly where the dampers act. The ~0.8 °/g
-split is the damper's transient contribution bleeding into a
-quasi-steady measurement — the seat's "Normal leans more" made
-visible, in the least-transient data this course can provide — and
-the split shrinks toward overlap when the steadiness filter is
-loosened, which is the fingerprint of a transient effect rather than
-a spring-rate one. The binned means also bow steeper at high g than
-the straight fit — the relation is progressive, one more reminder
-that a single slope is a summary. The genuinely steady version of
-this number waits for the constant-radius work. Meanwhile the mean
-gradient pays off a
-promise from the grip section: at ~2.5 °/g, body roll inflates the
-roof accelerometer's lateral channel by about 4%, so the honest grip
-figures are **@@P95C@@ g** at the 95th percentile and **@@MAXC@@ g**
-peak — the 0.75–0.85 g prediction stays busted after the correction.
+@@RGNLO@@–@@RGNHI@@). **Sport+: @@RGS@@ °/g** (@@RGSLO@@–@@RGSHI@@).
+The ranges don't touch — every Normal run leaned more per g than
+every Sport+ run.
 
-The graveyard, with causes of death: a roll-rate *transfer function*
-per mode (coherence between lateral input and roll rate never reached
-0.6 at any frequency — on a course the road excites roll as much as
-the driver does, so the estimator starves; it needs the ride block's
-matched inputs). Launch and finish-brake pitch transients overlaid
-per mode (driver variance swamps the mode signal, and the roof
-lever-arm contaminates the accelerometer during pitch transients).
-Brake-dive and squat gradients by the same disagreement trick
-(autocross braking is a two-second ramp, never quasi-steady —
-correlations near zero, no number). And repeated-bump ringdowns
-(Storm Stadium's lot is smooth: three vertical events all session,
-none recurring). Every one of those failures points at the same
-place: controlled inputs. Which is what the ride block is.
+Read carefully. A true steady-state gradient *cannot* split on stock
+springs and bars — that's the whole argument above. What this
+measures is that an autocross never offers truly steady samples. Even
+the calmest windows carry residual roll rate, and roll rate is where
+the dampers act. The ~0.8 °/g split is the damper's transient
+contribution bleeding into a quasi-steady measurement — the seat's
+"Normal leans more," made visible.
+
+The fingerprint backs that reading. Loosen the steadiness filter and
+the split shrinks toward overlap. The binned means also bow steeper
+at high g than the straight fit — the relation is progressive, and a
+single slope is a summary. The genuinely steady version of this
+number waits for the constant-radius work.
+
+The mean gradient also pays off the grip section's promise. At
+~2.5 °/g, body roll inflates the roof accelerometer's lateral channel
+by about 4%. The honest grip figures: **@@P95C@@ g** at the 95th
+percentile, **@@MAXC@@ g** peak. The prediction stays busted.
+
+The graveyard, with causes of death. A roll transfer function per
+mode: coherence never reached 0.6 at any frequency — on a course, the
+road excites roll as much as the driver does, and the estimator
+starves. Launch and finish-brake pitch transients: driver variance
+swamps the mode signal, and the roof lever-arm contaminates the
+accelerometer. Dive and squat gradients by the same disagreement
+trick: autocross braking is a two-second ramp, never quasi-steady —
+correlations near zero. Repeated-bump ringdowns: Storm Stadium's lot
+is smooth — three vertical events all session, none recurring.
+
+Every failure points at the same place: controlled inputs. Which is
+what the ride block is.
 
 ## What's next
 
-The 45-minute ride block (speed bump decays, slab-joint and
-broken-surface passes per mode) is still owed — that's where the heave
-damping-ratio headline number comes from. Then the quarter-car fit and
-the semi-active study on top of it, per the plan. The raw session
-folder and the MATLAB pipeline publish with the field report.
+The 45-minute ride block is still owed: speed-bump decays and
+rough-surface passes, per mode. That's where the heave damping-ratio
+headline number comes from. Then the quarter-car fit and the
+semi-active study on top of it, per the plan. The raw session folder
+and the MATLAB pipeline publish with the field report.
 """
 
 
