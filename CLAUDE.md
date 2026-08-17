@@ -24,5 +24,5 @@ Non-negotiables, inline (details and the rest in RULES.md):
   cross-correlation against the RaceBox). See `docs/shakedown.md`.
 - Agents work in worktrees under `work/` (gitignored) on
   `agent/<slug>` branches. Never edit the main working tree, never
-  push `main`; commits end with
-  `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
+  push `main`. Do not add AI co-author trailers unless the owner
+  explicitly requests one.
