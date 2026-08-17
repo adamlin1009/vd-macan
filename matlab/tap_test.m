@@ -22,7 +22,7 @@ arguments
     opts.rate (1,1) double = 200
 end
 
-[D, meta] = ingest_puck(path, rate=opts.rate);
+[D, meta] = ingest_imu(path, rate=opts.rate);
 fprintf("\n%s: %d samples, format %s, %d bad frames\n", ...
     path, meta.n, meta.format, meta.bad_frames);
 

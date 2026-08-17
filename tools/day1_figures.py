@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Build the day-1 log post: analysis + inline-SVG figures + assembled md.
 
-Reads the staged afternoon session (racebox.csv + puck_sd/WIT38-41),
-recomputes gates with the calibrated shifts, measures the puck clock
+Reads the staged afternoon session (racebox.csv + imu_sd/WIT38-41),
+recomputes gates with the calibrated shifts, measures the IMU clock
 offset against the RaceBox by envelope cross-correlation, computes
 per-run per-mode metrics, and writes the complete post to the website
 repo. All colors validated (dataviz six checks, dark surface #14171c):
@@ -154,11 +154,11 @@ def find_runs(d):
     return runs, (P0, u0), (P1, u1)
 
 
-# ------------------------------------------------------------------ puck
-def load_puck():
+# ------------------------------------------------------------------ IMU
+def load_imu():
     rows = []
     for name in ["WIT38.TXT", "WIT39.TXT", "WIT40.TXT", "WIT41.TXT"]:
-        buf = (SESSION / "puck_sd" / name).read_bytes()
+        buf = (SESSION / "imu_sd" / name).read_bytes()
         r = parse_flag61(buf)
         if r is None:
             r, _ = parse_standard(buf)
@@ -364,10 +364,10 @@ def fig_gg(d, runs):
     return "".join(parts)
 
 
-def analyze_puck(d, runs):
+def analyze_imu(d, runs):
     """Per-file clock fit (envelope xcorr vs RaceBox) + per-run metrics.
 
-    The puck's tick is a clean 5 ms RELATIVE, but absolute rate runs ~2%
+    The IMU's tick is a clean 5 ms RELATIVE, but absolute rate runs ~2%
     slow and the offset re-arms each power-on: fit OFF(t)=a+b*t per file
     from per-run cross-correlation, then window with the corrected clock.
     """
@@ -378,7 +378,7 @@ def analyze_puck(d, runs):
     for name, runidx in [("WIT39.TXT", [0, 1, 2, 3]),
                          ("WIT40.TXT", [4, 5])]:
         rows = [r for r in parse_flag61(
-            (SESSION / "puck_sd" / name).read_bytes()) if r["t"]]
+            (SESSION / "imu_sd" / name).read_bytes()) if r["t"]]
         pt = np.array([(r["t"] - d["t0"]).total_seconds() for r in rows])
         acc = np.array([r["acc"] for r in rows], float) * ACC_SCALE
         gyr = np.array([r["gyr"] for r in rows], float) * GYR_SCALE
@@ -457,6 +457,73 @@ def fig_roll(roll_rms):
     return "".join(parts)
 
 
+def roll_gradient(d, runs):
+    """Roll angle from the accelerometer/kinematic disagreement:
+    phi ~ (ay_accel - v*yaw_rate)/g at quasi-steady cornering samples.
+    Same-device (RaceBox) only — cross-device versions are biased by the
+    +-130 ms clock residual. Returns per-run slopes + pooled points."""
+    ay_kin = d["v"] * np.radians(d["yaw"]) / 9.81
+    slopes, pts = [], {"Normal": [], "Sport+": []}
+    for ri, r in enumerate(runs):
+        g = np.arange(r["t_s"] + 1, r["t_f"] - 1, 0.04)
+        ayk = np.interp(g, d["ts"], ay_kin)
+        aym = np.interp(g, d["ts"], d["gy"])
+        v = np.interp(g, d["ts"], d["v"])
+        gx = np.interp(g, d["ts"], d["gx"])
+        day = np.gradient(ayk, g)
+        qs = ((np.abs(ayk) > 0.30) & (np.abs(day) < 0.30)
+              & (v > 8) & (np.abs(gx) < 0.25))
+        phi = np.degrees(aym[qs] - ayk[qs])
+        slopes.append(float(np.polyfit(ayk[qs], phi, 1)[0]))
+        pts[MODES[ri]] += list(zip(ayk[qs], phi))
+    return slopes, pts
+
+
+def fig_rollgrad(slopes, pts):
+    h = 380
+    padl, padr, padt, padb = 64, 24, 34, 44
+    x0, x1, y0, y1 = -1.15, 1.15, -4.4, 4.4
+    def xm(x):
+        return padl + (x - x0) / (x1 - x0) * (W - padl - padr)
+    def ym(y):
+        return padt + (y1 - y) / (y1 - y0) * (h - padt - padb)
+    parts = [svg_open(h, "Roll angle versus lateral acceleration by PASM mode")]
+    parts.append(f'<line x1="{xm(x0)}" y1="{ym(0):.1f}" x2="{xm(x1)}" '
+                 f'y2="{ym(0):.1f}" stroke="{GRID}" stroke-width="1"/>')
+    parts.append(f'<line x1="{xm(0):.1f}" y1="{padt}" x2="{xm(0):.1f}" '
+                 f'y2="{h-padb}" stroke="{GRID}" stroke-width="1"/>')
+    for gv in [-1.0, -0.5, 0.5, 1.0]:
+        parts.append(txt(xm(gv), h - padb + 16, f"{gv:+.1f} G", 9, DIM, "middle"))
+    for dv in [-4, -2, 2, 4]:
+        parts.append(txt(padl - 8, ym(dv) + 3, f"{dv:+d}°", 9, DIM, "end"))
+    for mode, color in [("Normal", C_N), ("Sport+", C_S)]:
+        p = pts[mode][:: max(1, len(pts[mode]) // 300)]
+        for x, y in p:
+            if x0 < x < x1 and y0 < y < y1:
+                parts.append(f'<circle cx="{xm(x):.1f}" cy="{ym(y):.1f}" r="2" '
+                             f'fill="{color}" fill-opacity="0.5"/>')
+    for mode, color, idxs in [("Normal", C_N, (0, 2, 4)),
+                              ("Sport+", C_S, (1, 3, 5))]:
+        # binned means: the trend the fit follows, visible over the cloud
+        arr = np.array(pts[mode])
+        for b0 in np.arange(-1.1, 1.1, 0.2):
+            mb = (arr[:, 0] >= b0) & (arr[:, 0] < b0 + 0.2)
+            if mb.sum() >= 12 and y0 < arr[mb, 1].mean() < y1:
+                parts.append(f'<circle cx="{xm(b0+0.1):.1f}" '
+                             f'cy="{ym(arr[mb,1].mean()):.1f}" r="5" '
+                             f'fill="{color}" stroke="{SURF}" stroke-width="2"/>')
+        s = np.mean([slopes[i] for i in idxs])
+        parts.append(f'<line x1="{xm(-1.1):.1f}" y1="{ym(-1.1*s):.1f}" '
+                     f'x2="{xm(1.1):.1f}" y2="{ym(1.1*s):.1f}" stroke="{color}" '
+                     f'stroke-width="2"/>')
+        parts.append(txt(xm(1.1) - 4, ym(1.1 * s) + (14 if mode == "Sport+" else -8),
+                         f"{s:+.1f}°/G {mode.upper()}", 9, INK, "end", halo=True))
+    parts.append(txt(8, padt - 12, "ROLL ANGLE FROM ACCEL/KINEMATIC SPLIT · °", 9, DIM))
+    parts.append(legend(padl + 250, padt - 20, [(C_N, "NORMAL"), (C_S, "SPORT+")]))
+    parts.append("</svg>")
+    return "".join(parts)
+
+
 def figure(svg, num, title, note):
     return (f'<figure class="log-figure">{svg}<figcaption>'
             f'<span>FIG {num:02d}</span><span>{title}</span>'
@@ -473,7 +540,7 @@ def main():
     runs, g0, g1 = find_runs(d)
     print("runs:", [f"{r['time']:.2f}s" for r in runs])
 
-    pk = analyze_puck(d, runs)
+    pk = analyze_imu(d, runs)
     print("roll RMS deg/s:", [f"{x:.2f}" for x in pk["roll"]])
     print(f"clock offsets {pk['off_first']:.0f} -> {pk['off_last']:.0f} s; "
           f"xcorr {min(pk['xc']):.2f}-{max(pk['xc']):.2f}; "
@@ -488,6 +555,14 @@ def main():
     lat_p95 = float(np.percentile(np.abs(d["gy"][corner & in_runs]), 95))
     lat_max = float(np.abs(d["gy"][corner & in_runs]).max())
     print(f"lat p95 {lat_p95:.2f}, max {lat_max:.2f}")
+
+    rg_slopes, rg_pts = roll_gradient(d, runs)
+    rgn = float(np.mean([rg_slopes[i] for i in (0, 2, 4)]))
+    rgs = float(np.mean([rg_slopes[i] for i in (1, 3, 5)]))
+    grad_rad = float(np.radians(0.5 * (rgn + rgs)))
+    print(f"roll gradient per run: {[f'{s:+.2f}' for s in rg_slopes]}; "
+          f"N {rgn:+.2f} S+ {rgs:+.2f}; corrected grip p95 "
+          f"{lat_p95/(1+grad_rad):.2f} max {lat_max/(1+grad_rad):.2f}")
 
     figs = {
         "MAP": figure(fig_map(d, runs, g0, g1), 1,
@@ -505,6 +580,9 @@ def main():
         "ROLL": figure(fig_roll(pk["roll"]), 5,
                        "ROLL-RATE RMS PER RUN · CONSOLE-MOUNTED IMU",
                        "WT901SDCL-BT50 · CLOCK SYNCED TO GPS"),
+        "RGRAD": figure(fig_rollgrad(rg_slopes, rg_pts), 6,
+                        "ROLL ANGLE VS LATERAL G · QUASI-STEADY SAMPLES",
+                        "RACEBOX ACCEL MINUS V×YAW · SELF-CONSISTENT"),
     }
 
     rows = "\n".join(
@@ -529,6 +607,14 @@ def main():
         "@@XCLO@@": f"{min(pk['xc']):.2f}",
         "@@XCHI@@": f"{max(pk['xc']):.2f}",
         "@@AYHI@@": f"{max(pk['corr_ay']):.2f}",
+        "@@RGN@@": f"{rgn:.2f}",
+        "@@RGS@@": f"{rgs:.2f}",
+        "@@RGNLO@@": f"{min(rg_slopes[i] for i in (0,2,4)):.2f}",
+        "@@RGNHI@@": f"{max(rg_slopes[i] for i in (0,2,4)):.2f}",
+        "@@RGSLO@@": f"{min(rg_slopes[i] for i in (1,3,5)):.2f}",
+        "@@RGSHI@@": f"{max(rg_slopes[i] for i in (1,3,5)):.2f}",
+        "@@P95C@@": f"{lat_p95/(1+grad_rad):.2f}",
+        "@@MAXC@@": f"{lat_max/(1+grad_rad):.2f}",
         **{f"@@FIG_{k}@@": v for k, v in figs.items()},
     }.items():
         post = post.replace(key, val)
@@ -553,7 +639,7 @@ session; the TPMS read 36/39 at the start (a consistent −1 psi against
 the gauge on both axles) and climbed to 40/42 by the end. Fuel ran from
 about 5/8 to 1/2 tank.
 
-The RaceBox rode the roof at 25 Hz and caught every run; the IMU puck
+The RaceBox rode the roof at 25 Hz and caught every run; the AHRS IMU
 rode the center console, on the cupholder perimeter — though getting
 its data to admit it was aboard took a fight I'll get to. The plan's
 brake-jab sync ritual didn't happen — the day moved fast — but it
@@ -563,7 +649,7 @@ spike and fifty-six seconds of unmistakable car dynamics.
 ## What the instruments turned out to be
 
 Shakedown honesty, because the numbers only mean something if the
-instrument is characterized. The puck writes frames at exactly 200 Hz
+instrument is characterized. The IMU writes frames at exactly 200 Hz
 on a clean 5 ms clock — but underneath, its fusion loop updates the
 accelerometer at about 104 Hz and the gyro at about 50 Hz, so roughly
 half the frames repeat the previous values. That still clears the
@@ -620,7 +706,7 @@ percentile @@P95@@ g, peak @@MAX@@ g. The prediction wasn't just
 missed, it was cleared with room to spare — and per this project's
 standing rules, it stays in the text. Two honest caveats ride along:
 the RaceBox sits on the roof, so body roll leaks a few percent of
-gravity into its lateral channel (the puck's roll angle will correct
+gravity into its lateral channel (the IMU's roll angle will correct
 that before any number gets called final), and an autocross course
 rewards brief peaks, not skidpad steady-state.
 
@@ -628,22 +714,22 @@ rewards brief peaks, not skidpad steady-state.
 
 ## The clock that lied by two percent
 
-My first pass at the puck's file said the sensor sat level and still
+My first pass at the IMU's file said the sensor sat level and still
 through every single run window — for one bad hour the working theory
 was that it had spent the day in the paddock. It hadn't. It rode the
 console the whole session, and its own file proves it: six
 unmistakable ~56-second bursts of car dynamics, spaced exactly like
 the run schedule — just not where the timestamps said they should be.
-The puck's clock ticks a clean 5 ms per frame relative to itself, but
+The IMU's clock ticks a clean 5 ms per frame relative to itself, but
 its absolute rate runs about two percent slow, and every power-cycle
 re-arms the offset: by run 1 the file clock trailed GPS time by
 @@OFF1@@ seconds, and by run 6, @@OFF6@@. Cross-correlating the
 acceleration envelope against the RaceBox pins each file's clock to
 GPS (per-run correlation @@XCLO@@–@@XCHI@@, residuals inside
 ±130 ms), and with the clock fixed the mount checks out end to end —
-puck lateral tracks GPS lateral at r = @@AYHI@@, longitudinal tracks
+IMU lateral tracks GPS lateral at r = @@AYHI@@, longitudinal tracks
 longitudinal, yaw tracks yaw. Two lines joined the per-session card:
-confirm the puck is aboard and flashing, and never trust a logger's
+confirm the IMU is aboard and flashing, and never trust a logger's
 clock you haven't measured against GPS. The plan's brake-jab ritual —
 which never actually happened on day one — exists for exactly this
 failure mode; course runs turned out to carry a fingerprint loud
@@ -656,7 +742,7 @@ My recollection, written down the day after (the per-run blind sheets
 fell to the event-day rush, so this is memory and labeled as such):
 Normal had a lot more body roll, pitch, and yaw; Sport+ felt a lot
 more planted and reactive. With the clock fixed, the first channel
-that can referee is the puck's roll-rate gyro, run by run:
+that can referee is the IMU's roll-rate gyro, run by run:
 
 @@FIG_ROLL@@
 
@@ -688,6 +774,59 @@ and the ride block, where the road does the asking — and the
 angle-domain lean question waits for the same. Carrying a sensation
 across to the right number is the discipline this project exists to
 practice; this is what it looks like mid-translation.
+
+## Wringing the dataset: five derivations, one survivor
+
+With the clock solved I went hunting for everything else these two
+loggers could be made to say. Five derived analyses; one produced a
+number I'll stand behind, and four failed in ways worth recording.
+
+The survivor is a roll sensor built out of disagreement. The
+accelerometer measures true lateral acceleration *plus* gravity
+leaking through the roll angle; speed times yaw rate measures true
+lateral acceleration alone. Their difference, at quasi-steady
+cornering samples, is the roll angle — no roll sensor involved, one
+device, immune to the clock saga. Regressed against lateral g, run by
+run:
+
+@@FIG_RGRAD@@
+
+The result surprised me. **Normal: @@RGN@@ °/g** (per-run
+@@RGNLO@@–@@RGNHI@@); **Sport+: @@RGS@@ °/g** (@@RGSLO@@–@@RGSHI@@)
+— the ranges don't touch: every Normal run leaned more per g than
+every Sport+ run. Read carefully, though, because a true steady-state
+gradient *cannot* split on stock springs and bars — that's the whole
+argument above. What this measures is that an autocross never offers
+truly steady samples: even the calmest windows carry residual roll
+rate, and roll rate is exactly where the dampers act. The ~0.8 °/g
+split is the damper's transient contribution bleeding into a
+quasi-steady measurement — the seat's "Normal leans more" made
+visible, in the least-transient data this course can provide — and
+the split shrinks toward overlap when the steadiness filter is
+loosened, which is the fingerprint of a transient effect rather than
+a spring-rate one. The binned means also bow steeper at high g than
+the straight fit — the relation is progressive, one more reminder
+that a single slope is a summary. The genuinely steady version of
+this number waits for the constant-radius work. Meanwhile the mean
+gradient pays off a
+promise from the grip section: at ~2.5 °/g, body roll inflates the
+roof accelerometer's lateral channel by about 4%, so the honest grip
+figures are **@@P95C@@ g** at the 95th percentile and **@@MAXC@@ g**
+peak — the 0.75–0.85 g prediction stays busted after the correction.
+
+The graveyard, with causes of death: a roll-rate *transfer function*
+per mode (coherence between lateral input and roll rate never reached
+0.6 at any frequency — on a course the road excites roll as much as
+the driver does, so the estimator starves; it needs the ride block's
+matched inputs). Launch and finish-brake pitch transients overlaid
+per mode (driver variance swamps the mode signal, and the roof
+lever-arm contaminates the accelerometer during pitch transients).
+Brake-dive and squat gradients by the same disagreement trick
+(autocross braking is a two-second ramp, never quasi-steady —
+correlations near zero, no number). And repeated-bump ringdowns
+(Storm Stadium's lot is smooth: three vertical events all session,
+none recurring). Every one of those failures points at the same
+place: controlled inputs. Which is what the ride block is.
 
 ## What's next
 

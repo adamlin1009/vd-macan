@@ -1,7 +1,7 @@
 function R = ride_psd(D, opts)
 %RIDE_PSD Welch PSD + band splits of vertical acceleration, per segment.
 %
-%   R = RIDE_PSD(D)           % D from ingest_puck (uses acc z, in g)
+%   R = RIDE_PSD(D)           % D from ingest_imu (uses acc z, in g)
 %   R = RIDE_PSD(D, fs=200, band_primary=[0.5 4], band_secondary=[4 25])
 %
 %   Returns: f, Pzz [(m/s^2)^2/Hz], rms_total, rms_primary, rms_secondary,

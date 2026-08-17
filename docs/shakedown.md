@@ -1,6 +1,6 @@
 # WT901SDCL-BT50 shakedown + in-car procedure
 
-Source of truth for the puck's configuration and the per-session workflow.
+Source of truth for the IMU's configuration and the per-session workflow.
 Config values verified against WitMotion's official BT50 docs
 (protocol V260506, user manual v25-04-18, datasheet v23-1227).
 
@@ -11,16 +11,16 @@ Open the sensor's **Configuration / Sensor Configuration** panel and set:
 | setting | value | why |
 |---|---|---|
 | Algorithm | **Axis 6** | a car is a rolling magnetic disturbance; 9-axis lets the magnetometer yank yaw around. 6-axis yaw drifts slowly instead — RaceBox GPS owns absolute heading. Skip magnetic calibration entirely. |
-| Installation Direction | **Horizontal** | puck mounts flat on the rail |
+| Installation Direction | **Horizontal** | IMU mounts flat on the rail |
 | Return Rate | **200 Hz** | ships at 10 Hz — the single most important change |
 | Band Width | **98 Hz** | firmware pads duplicate samples whenever rate > bandwidth; at the default 20 Hz, "200 Hz" is really ~50 Hz repeated. 98 Hz makes 200 Hz real and still filters above the 4–25 Hz secondary-ride band. |
 | Acceleration range | 16 g/s2 (default) | headroom for taps and curbs; still 0.5 mg resolution |
 | Gyro range | 2000 deg/s (default) | fixed |
 | Gyro Auto Calibrate | leave **on** | re-zeros gyro bias when stationary |
 | Time calibration | **click it** | writes the Mac's clock into the RTC so SD timestamps land near real time; brake jabs do the fine alignment |
-| Device Name | optional: `MACAN-PUCK` | avoids pairing the wrong "WIT" at a busy paddock |
+| Device Name | optional: `MACAN-IMU` | avoids pairing the wrong "WIT" at a busy paddock |
 
-Then **Calibrate → Acceleration**: puck flat and still on a hard level
+Then **Calibrate → Acceleration**: IMU flat and still on a hard level
 surface, click, wait ~2 s. Accept when az reads ≈ 1.000 g and X/Y angles
 ≈ 0°. Do NOT "Reset Z-axis Angle" at home — yaw zero is per-session, and
 in 6-axis mode it re-zeros itself at every power-on anyway.
@@ -33,8 +33,8 @@ for 10–20 h of recording — a full event day.
 1. In the app's Storage section tick **RecordStatus** (this is the SD
    record switch). Blue LED flashing = recording to internal storage.
 2. Record ~2 min: 30 s still → 5 sharp taps on the TABLE next to the
-   puck, ~1 s apart → 30 s still → 3 taps on the puck itself → still.
-3. Untick RecordStatus. **Power-cycle the puck, watch the LED:** if the
+   IMU, ~1 s apart → 30 s still → 3 taps on the IMU itself → still.
+3. Untick RecordStatus. **Power-cycle the IMU, watch the LED:** if the
    blue flash returns on its own, record-on-boot persists and the power
    switch is the whole track workflow. If it doesn't, RecordStatus must
    be ticked from the phone app at each session start — note which.
@@ -57,26 +57,26 @@ keeps failing (from the plan): Movella DOT-class replacement.
 
 - Spot: driver's-side seat rail, bare metal, where nothing hits it at
   full seat travel — run the seat through its whole range FIRST.
-- Isopropyl-wipe both surfaces. VHB square on the puck's flat base, press
-  firm 30 s. Puck flat, label up, **printed X arrow pointing at the nose**
+- Isopropyl-wipe both surfaces. VHB square on the IMU's flat base, press
+  firm 30 s. IMU flat, label up, **printed X arrow pointing at the nose**
   (Y arrow at the driver's door) — ISO 8855 body axes: X forward, Y left,
   Z up. Vertical ride channel = az; device Roll/Pitch = car roll/pitch.
 - Photograph the mounted orientation once — it's the axes contract for
   every future session.
-- Knuckle-tap the rail next to the puck tomorrow with a short recording
+- Knuckle-tap the rail next to the IMU tomorrow with a short recording
   running: gate #2 is the same tap criteria on the mount. Crisp on the
   desk but ringing on the rail = the MOUNT is resonating, not the car.
 
 ## Per-session card (track)
 
 1. Cold pressures to placard, log them (same gauge, eye level).
-2. **Puck IS IN THE CAR, mounted, blue LED flashing — physically verify
+2. **IMU IS IN THE CAR, mounted, blue LED flashing — physically verify
    before the first launch.** And never trust its clock: the tick runs
    ~2% slow and the offset re-arms every power-on (day-1 lesson — the
    file clock trailed GPS by 131→181 s across the session and made
    in-car data look like paddock stillness until envelope
    cross-correlation against the RaceBox unmasked it; day1_figures.py /
-   sync_runs handle the fit). Puck on ≥ 1 min before rolling.
+   sync_runs handle the fit). IMU on ≥ 1 min before rolling.
 3. RaceBox on, wait for satellite fix, start recording.
 4. **Three sharp stationary brake jabs** — the clock-sync signature.
    (Day 1 ran without them; course runs carry their own launch
@@ -84,9 +84,9 @@ keeps failing (from the plan): Movella DOT-class replacement.
    REQUIRED for ride-block passes, which have no such fingerprint.)
 5. Drive. Autocross: recordings restart per run, so jabs per run; ride
    loops: one recording per config, jabs at start and end.
-6. End of recording: 15 s still → three jabs again → 5 s still → puck off.
+6. End of recording: 15 s still → three jabs again → 5 s still → IMU off.
 7. notes.md: config name, PASM mode, hot pressures, fuel, ambient, surface.
-8. Between sessions puck off; top up from a power bank if the day runs long.
+8. Between sessions IMU off; top up from a power bank if the day runs long.
 
 ## Course-run driving protocol (autocross)
 
@@ -108,9 +108,9 @@ immediately AFTER, before times, bench racing, or any data.
 
 ## Offload (desk, per session)
 
-One folder per recording: `data/YYYYMMDD_run##_<config>/` with `puck.bin`
+One folder per recording: `data/YYYYMMDD_run##_<config>/` with `imu.bin`
 (the WITn.TXT, renamed), `racebox.csv`, `notes.md`. Then
-`tap_check.py puck.bin` as a quick health pass before anything else reads it.
+`tap_check.py imu.bin` as a quick health pass before anything else reads it.
 
 **Channel discipline (settled 2026-08-16 against the SD card itself):**
 the analysis channel is the device's own WITn.TXT — and USB-C **does**
@@ -120,7 +120,7 @@ The SD ground truth: 28-byte 0x61 frames at an exact 200 Hz on a clean
 all values — the fusion loop updates acc ~104 Hz and gyro ~50 Hz while
 frames write at 200. That satisfies the plan's ≥100 Hz-to-storage
 requirement and covers the 4–25 Hz secondary-ride band; parse with
-`ingest_puck(..., dedupe=true)` for spectra. Files roll over at ~12 MB
+`ingest_imu(..., dedupe=true)` for spectra. Files roll over at ~12 MB
 and a new file opens per power-on; occasional single RTC back-steps
 appear (ingest sorts them). The app's .txt export (fresh-looking values,
 burst timestamps, 2.5–6% loss) and .wplay (true device timestamps, stale

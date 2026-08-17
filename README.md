@@ -10,7 +10,7 @@ MATLAB pipeline, both public when the posts ship.
 
 ```
 data/YYYYMMDD_run##_<config>/   one folder per continuous recording
-    puck.bin        raw WitMotion SD file (WITn.TXT, renamed)
+    imu.bin        raw WitMotion SD file (WITn.TXT, renamed)
     racebox.csv     RaceBox session export
     notes.md        config, PASM mode, pressures cold/hot, fuel, ambient, surface
 matlab/             pipeline (ingest -> sync -> metrics -> model)
@@ -22,7 +22,7 @@ docs/shakedown.md   device config + tap-test gate + in-car procedure
 
 | stage | file | status |
 |---|---|---|
-| ingest puck | `ingest_puck.m` | ready (mirrors verified `tap_check.py` parser) |
+| ingest IMU | `ingest_imu.m` | ready (mirrors verified `tap_check.py` parser) |
 | ingest RaceBox | `ingest_racebox.m` | skeleton — harden on first real CSV |
 | clock sync | `sync_runs.m` | ready (brake-jab cross-correlation + drift) |
 | shakedown gate | `tap_test.m` / `tap_check.py` | ready |
@@ -38,7 +38,7 @@ Device constants baked into the ingest: WT901SDCL-BT50, ±16 g / ±2000 °/s /
 
 ## Axes (mounting contract)
 
-Mount the puck flat, label up, **printed X arrow toward the nose** (Y
+Mount the IMU flat, label up, **printed X arrow toward the nose** (Y
 arrow then points at the driver's door). That is ISO 8855 body axes:
 X forward, Y left, Z up. Car mapping: `a_long=+accX`, `a_lat=+accY`
 (left-positive per ISO — negate for SAE right-positive), `a_vert=+accZ`;

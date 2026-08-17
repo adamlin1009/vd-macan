@@ -26,7 +26,7 @@ dataset; the morning session (10:16) is excluded.**
 - **Sport+:** "a lot more planted and reactive."
 
 These are the claims the objective transients must test: Normal should
-show larger roll/pitch rates (puck gyrX/gyrY) and larger yaw overshoot /
+show larger roll/pitch rates (IMU gyrX/gyrY) and larger yaw overshoot /
 slower settling (RaceBox GyroZ via stepsteer_metrics on course
 transients); "planted" should appear as higher damping in both.
 
@@ -58,7 +58,7 @@ Stationary long-g spike clusters precede runs at t ≈ 569, 989, 1408,
 2200, 2510 s + a cluster at 2674 s — **NOT deliberate sync jabs (owner
 confirmed 2026-08-16: none were performed on day 1)**; staging /
 brake-pedal activity. Clock sync was done by run-envelope
-cross-correlation instead (see puck clock model below).
+cross-correlation instead (see IMU clock model below).
 Grip-ceiling view (|lat g| while cornering):
 p95 0.97, p99 1.02, max 1.14 — registered prediction was 0.75–0.85 g.
 
@@ -66,9 +66,9 @@ p95 0.97, p99 1.02, max 1.14 — registered prediction was 0.75–0.85 g.
 
 - `racebox.csv` — RaceBox Track Session 14:52 (25.00 Hz, 53 min, Speed
   in mph, GForceX=long/GForceY=lat/GyroZ=yaw verified)
-- `puck_sd/WIT38–WIT41.TXT` — the puck's own storage covering the
+- `imu_sd/WIT38–WIT41.TXT` — the IMU's own storage covering the
   session (200 Hz frames, ~104 Hz effective acc; parse with
-  ingest_puck, dedupe=true for spectra). **Puck WAS aboard: mounted on
+  ingest_imu, dedupe=true for spectra). **IMU WAS aboard: mounted on
   the center console, cupholder perimeter, printed X forward (verified
   empirically: ax↔GPS long, ay↔GPS lat r≤0.91, yaw r≤0.91). CLOCK
   CAUTION: device timestamps run ~2% slow and the offset re-arms per

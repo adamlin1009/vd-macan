@@ -1,8 +1,8 @@
-function [D, meta] = ingest_puck(path, opts)
-%INGEST_PUCK Parse a WitMotion WT901SDCL-BT50 log into a timetable.
+function [D, meta] = ingest_imu(path, opts)
+%INGEST_IMU Parse a WitMotion WT901SDCL-BT50 log into a timetable.
 %
-%   [D, meta] = INGEST_PUCK(path)            % raw SD file WITn.TXT
-%   [D, meta] = INGEST_PUCK(path, rate=200)  % nominal rate if no timestamps
+%   [D, meta] = INGEST_IMU(path)            % raw SD file WITn.TXT
+%   [D, meta] = INGEST_IMU(path, rate=200)  % nominal rate if no timestamps
 %
 %   D    timetable: t (datetime or duration), acc [g], gyr [deg/s],
 %        ang [deg], in device axes. Mounting contract: printed X arrow at
