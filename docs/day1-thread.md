@@ -1,9 +1,9 @@
-# Day-1 thread (X/Twitter) — owner voice, post-ready
+# Day-1 thread (X/Twitter), owner voice, post-ready
 
-Style: STE-style sentence discipline (short, active, one idea per
-sentence) + Zinsser (simplicity, brevity, clarity, humanity). All
-numbers verified against data/20260815_afternoon. Paste per tweet.
-Swap [LINK] for the log-post URL when it ships.
+Style: human conversational voice, short and active, no em dashes.
+All numbers verified against data/20260815_afternoon. Paste per
+tweet. Swap [LINK] for the log-post URL. Post AFTER the site post is
+live (tweet 9 says "publicly wrong," which the post makes true).
 
 ---
 
@@ -22,14 +22,14 @@ map.
 
 Same springs. Same anti-roll bars. Only the damper software changes.
 
-I alternated modes every run — N, S+, N, S+, N, S+ — and logged
+I alternated modes every run: N, S+, N, S+, N, S+. And logged
 everything.
 
 3/
 The kit:
 
-• RaceBox Mini S on the roof — GPS + gyro, 25 Hz
-• WitMotion AHRS IMU on the console — 200 Hz to onboard storage
+• RaceBox Mini S on the roof: GPS + gyro, 25 Hz
+• WitMotion AHRS IMU on the console: 200 Hz to onboard storage
 
 Total: about the price of one track tire.
 
@@ -81,7 +81,7 @@ about a tenth.
 Wrong #3. Before the event I published a prediction: this SUV on
 all-season tires tops out at 0.75–0.85 g.
 
-Measured: 0.93 g sustained, 1.09 g peak — after correcting for body
+Measured: 0.93 g sustained, 1.09 g peak, after correcting for body
 roll.
 
 Publicly wrong. That was the point of writing it down first.
@@ -124,10 +124,10 @@ Reading a number honestly beats getting one.
 14/
 I tried five derived analyses. One survived.
 
-Roll transfer function: dead — road noise drowns the signal.
-Pitch transients: dead — driver variance.
-Dive gradient: dead — braking too brief.
-Bump ringdowns: dead — the lot is smooth.
+Roll transfer function: dead (road noise drowns the signal).
+Pitch transients: dead (driver variance).
+Dive gradient: dead (braking too brief).
+Bump ringdowns: dead (the lot is smooth).
 
 Negative results are results. Record them.
 
@@ -138,12 +138,13 @@ If you instrument your own car, steal these:
 • Register predictions before data exists
 • The sensor doesn't measure what it isn't bolted to
 • Never trust an unmeasured clock
-• When clever math dies, you need controlled inputs — not more math
+• When clever math dies, you need controlled inputs, not more math
 
 16/
-Next: a 45-minute ride block with controlled inputs — speed bumps and
-rough roads in both modes — for the number this weekend couldn't
-give: damping ratio per mode.
+Next: more runs (every event day is a data day), the rating sheets
+done properly, and a controlled-input session when a lot
+materializes. Step-steers, constant-radius ramps, one repeatable
+bump. That's where damping ratio per mode comes from.
 
 Full write-up, all seven figures, raw data: [LINK]
 
