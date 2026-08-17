@@ -75,7 +75,7 @@ keeps failing (from the plan): Movella DOT-class replacement.
    ~2% slow and the offset re-arms every power-on (day-1 lesson — the
    file clock trailed GPS by 131→181 s across the session and made
    in-car data look like paddock stillness until envelope
-   cross-correlation against the RaceBox unmasked it; day1_figures.py /
+   cross-correlation against the RaceBox unmasked it; day1_analysis.py /
    sync_runs handle the fit). IMU on ≥ 1 min before rolling.
 3. RaceBox on, wait for satellite fix, start recording.
 4. **Three sharp stationary brake jabs** — the clock-sync signature.
@@ -108,9 +108,13 @@ immediately AFTER, before times, bench racing, or any data.
 
 ## Offload (desk, per session)
 
-One folder per recording: `data/YYYYMMDD_run##_<config>/` with `imu.bin`
-(the WITn.TXT, renamed), `racebox.csv`, `notes.md`. Then
-`tap_check.py imu.bin` as a quick health pass before anything else reads it.
+One folder per session: `data/YYYYMMDD_<session>/` with `racebox.csv`,
+`imu_sd/WITn.TXT` (the device files, unrenamed — a new one opens per
+power-on), `notes.md`, and a `SHA256SUMS` of the raw files (this replaced
+the earlier one-folder-per-recording / `imu.bin` convention once day 1
+showed a session spans several device files). Then
+`tap_check.py imu_sd/WITn.TXT` as a quick health pass before anything
+else reads it. Column definitions for everything: `data/README.md`.
 
 **Channel discipline (settled 2026-08-16 against the SD card itself):**
 the analysis channel is the device's own WITn.TXT — and USB-C **does**

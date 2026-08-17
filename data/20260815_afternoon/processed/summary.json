@@ -1,0 +1,141 @@
+{
+  "session": {
+    "date": "2026-08-15",
+    "venue": "Storm Stadium, Lake Elsinore, CA",
+    "event": "SCCA Cal Club autocross (afternoon session)",
+    "vehicle": "Porsche Macan S (95B), PASM adaptive dampers on steel springs, Pirelli Scorpion Verde All Season",
+    "racebox_t0_local": "2026-08-15T14:52:07.440",
+    "pasm_by_run": [
+      "Normal",
+      "Sport+",
+      "Normal",
+      "Sport+",
+      "Normal",
+      "Sport+"
+    ],
+    "powertrain_mode": "Sport+ (constant)",
+    "psm": "Sport",
+    "enu_origin_lat_deg": 33.65282625578534,
+    "enu_origin_lon_deg": -117.30245530635445
+  },
+  "gates": {
+    "start_shift_m": 2.0,
+    "finish_shift_m": -23.0,
+    "half_width_m": 12.0,
+    "calibration": "shifts fit to two owner-remembered official times (run 5 ~52.0 s, run 6 ~51.1 s), rms 0.11 s"
+  },
+  "run_times_s": {
+    "normal_runs": [
+      53.106411780022086,
+      52.12392289709328,
+      51.89817918450399
+    ],
+    "sportplus_runs": [
+      51.97879158178989,
+      52.33237595013907,
+      51.210386298173944
+    ],
+    "normal_mean": 52.37617128720645,
+    "sportplus_mean": 51.84051794336764
+  },
+  "grip_ceiling_g": {
+    "definition": "|a_lat| from the roof RaceBox while cornering (v > 8 m/s, |a_lat| > 0.3 g) inside the gates, all runs",
+    "p95_raw": 0.975,
+    "max_raw": 1.141,
+    "roll_leak_correction_deg_per_g": 2.5169929582615485,
+    "p95_roll_corrected": 0.9339708346075958,
+    "max_roll_corrected": 1.0929853561920686,
+    "registered_prediction_g": [
+      0.75,
+      0.85
+    ]
+  },
+  "imu_clock": {
+    "model": "wall_s = device_s + intercept + slope * t_mid_s, per SD file",
+    "fits": [
+      {
+        "imu_file": "WIT39.TXT",
+        "runs": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "intercept_s": 118.44937067387411,
+        "slope": 0.019849314097214778,
+        "n_anchors": 4
+      },
+      {
+        "imu_file": "WIT40.TXT",
+        "runs": [
+          5,
+          6
+        ],
+        "intercept_s": 125.52601416667937,
+        "slope": 0.021911259614020222,
+        "n_anchors": 2
+      }
+    ],
+    "offset_run1_s": 130.70847038680733,
+    "offset_run6_s": 181.60000000000116,
+    "envelope_xcorr_range": [
+      0.8427437870196679,
+      0.9031696831792031
+    ],
+    "imu_ay_vs_racebox_r_range": [
+      0.7948219777692864,
+      0.9046188976735833
+    ]
+  },
+  "roll_rate_rms_dps": {
+    "normal_runs": [
+      4.315587480176313,
+      4.283466629526212,
+      4.549360700292812
+    ],
+    "sportplus_runs": [
+      4.811438284552392,
+      4.592871982139339,
+      4.953873283966966
+    ],
+    "normal_mean": 4.382804936665113,
+    "sportplus_mean": 4.786061183552899
+  },
+  "roll_rate_per_ay_rate_s": {
+    "normal_runs": [
+      3.1786787928712097,
+      3.270302684503416,
+      3.2684585206278927
+    ],
+    "sportplus_runs": [
+      3.2412705387387977,
+      3.3174485598283763,
+      3.268230337168721
+    ],
+    "normal_mean": 3.2391466660008397,
+    "sportplus_mean": 3.275649811911965
+  },
+  "roll_gradient_deg_per_g": {
+    "normal_runs": [
+      2.647172594172733,
+      3.032108741874574,
+      3.1241793284807136
+    ],
+    "sportplus_runs": [
+      1.9429542149635113,
+      2.264986151550915,
+      2.090556718526843
+    ],
+    "normal_mean": 2.934486888176007,
+    "sportplus_mean": 2.09949902834709,
+    "method": "roll = (a_lat_accel - v*yaw_rate/g) at quasi-steady samples, RaceBox only; slope of a per-run linear fit vs v*yaw_rate/g",
+    "quasi_steady_mask": {
+      "abs_ay_kin_g_min": 0.3,
+      "abs_day_gps_max": 0.3,
+      "speed_mps_min": 8.0,
+      "abs_along_g_max": 0.25
+    },
+    "n_samples": 2617
+  },
+  "generator": "tools/day1_analysis.py"
+}
