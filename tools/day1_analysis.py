@@ -25,6 +25,7 @@ Usage:
 import argparse
 import datetime as dt
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -855,6 +856,46 @@ def write_figures(R, out):
     print("figures ->", _rel(out))
 
 
+# The post must link the public repository. The template carries the link
+# in its intro and closing; if a template rewrite drops it, write_post()
+# puts it back (before the first section, and as the closing sentence) and
+# says so on stderr — a link-less post is never written silently.
+REPO_URL = "https://github.com/adamlin1009/vd-macan"
+REPO_INTRO = (
+    "Everything below is reproducible. The raw session files, the\n"
+    "processed per-run tables, and the analysis code are public at\n"
+    f"[github.com/adamlin1009/vd-macan]({REPO_URL});\n"
+    "one script regenerates every number and figure in this post from the\n"
+    "raw logs.\n")
+REPO_CLOSING = (
+    "The raw session folder, the processed tables, and the code that\n"
+    "produced this post are already public in the\n"
+    f"[vd-macan repository]({REPO_URL}); the ride-block data joins it\n"
+    "when that block runs.")
+# Closing sentences seen in past template versions that should carry the
+# link; the first that matches is replaced, otherwise REPO_CLOSING is
+# appended as its own paragraph.
+STALE_CLOSINGS = [
+    re.compile(r"The raw session\s+folder\s+and the MATLAB\s+pipeline\s+publish"
+               r"\s+with the\s+field report\."),
+    re.compile(r"The raw session\s+folder\s+and the analysis code are public"
+               r"\s+in the meantime\."),
+]
+
+
+def ensure_repo_link(post):
+    if REPO_URL in post:
+        return post
+    print("WARNING: post template lost the repo link — injecting it",
+          file=sys.stderr)
+    i = post.index("\n## ")
+    post = post[:i].rstrip("\n") + "\n\n" + REPO_INTRO + post[i:]
+    for pat in STALE_CLOSINGS:
+        if pat.search(post):
+            return pat.sub(REPO_CLOSING, post)
+    return post.rstrip("\n") + "\n\n" + REPO_CLOSING + "\n"
+
+
 def write_post(R, path):
     d, runs, imu = R["d"], R["runs"], R["imu"]
     use_palette("site")
@@ -893,6 +934,7 @@ def write_post(R, path):
     }.items():
         post = post.replace(key, val)
     assert "@@" not in post, "unfilled template token"
+    post = ensure_repo_link(post)
     Path(path).write_text(post)
     print("wrote", path, f"({len(post)/1024:.0f} KB)")
 
