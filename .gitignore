@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 *.asv
 tap_check_report.png
+work/
+.DS_Store
