@@ -856,8 +856,9 @@ def write_figures(R, out):
     print("figures ->", _rel(out))
 
 
-# The post must link the public repository. The template carries the link
-# in its intro and closing; if a template rewrite drops it, write_post()
+# The post must link the public repository, and the link must be visible
+# near the top (owner, 2026-08-17). The template carries it in the intro,
+# before the first section; if a template rewrite drops it, write_post()
 # puts it back (before the first section, and as the closing sentence) and
 # says so on stderr — a link-less post is never written silently.
 REPO_URL = "https://github.com/adamlin1009/vd-macan"
@@ -979,7 +980,11 @@ to be the best part.
 
 So here's the whole story: six runs, two damper maps, a clock that
 flat-out lied to me, and a grip prediction I got to watch die in
-public.
+public. And you don't have to take my word for any of it: the raw
+session files, the processed per-run tables, and the code that
+produced every number and figure in this post are public in the
+[vd-macan repository](https://github.com/adamlin1009/vd-macan). One
+script regenerates the whole post from the raw logs.
 
 ## The setup
 
@@ -1294,12 +1299,7 @@ Here's the list, roughly ordered by value per effort:
   known and measured.
 
 Then the quarter-car fit and the semi-active study, once
-controlled-input data exists to feed them. And you don't have to take
-my word for any of this: the raw session files, the processed
-per-run tables, and the code that produced every number and figure in
-this post are public in the
-[vd-macan repository](https://github.com/adamlin1009/vd-macan).
-One script regenerates the whole post from the raw logs.
+controlled-input data exists to feed them.
 """
 
 
