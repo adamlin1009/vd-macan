@@ -952,6 +952,12 @@ didn't happen — the day moved fast. It turned out not to matter. Each
 run writes its own sync signature: a launch spike and fifty-six
 seconds of unmistakable car dynamics.
 
+Everything below is reproducible. The raw session files, the
+processed per-run tables, and the analysis code are public at
+[github.com/adamlin1009/vd-macan](https://github.com/adamlin1009/vd-macan);
+one script regenerates every number and figure in this post from the
+raw logs.
+
 ## Wrong #1: the "200 Hz" sensor isn't one
 
 Numbers only mean something when the instrument is characterized. So
@@ -1156,8 +1162,10 @@ For anyone instrumenting their own car:
 The 45-minute ride block: speed-bump decays and rough-surface passes
 per mode, with controlled inputs. That's where the heave
 damping-ratio headline number comes from. Then the quarter-car fit
-and the semi-active study. The raw session folder and the MATLAB
-pipeline publish with the field report.
+and the semi-active study. The day-1 session folder, the processed
+tables, and the code that produced this post are already public in
+the [vd-macan repository](https://github.com/adamlin1009/vd-macan);
+the ride-block data joins it when that block runs.
 """
 
 
