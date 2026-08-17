@@ -1002,7 +1002,7 @@ tank to 1/2.
 Two loggers rode along: the RaceBox on the roof catching every run at
 25 Hz, and the AHRS IMU on the center console writing 200 Hz to its
 own storage. Two independent loggers means two independent clocks,
-and keeping them honest turned out to be its own small adventure.
+and keeping them in step turned out to be its own small adventure.
 Luckily each run writes its own sync signature: a launch spike and
 then fifty-six seconds of unmistakable car dynamics. Why that
 mattered so much is Wrong #3.
@@ -1185,7 +1185,7 @@ is damper territory. "Planted and reactive" is a rate feeling, and a
 tighter car makes *more* roll rate, not less. The gyro agreed with
 the seat the whole time. I was just asking it the wrong question.
 
-One honest confound stays attached: I drove the Sport+ runs harder.
+One real confound stays attached: I drove the Sport+ runs harder.
 Separating "the car responds faster" from "the driver asked for more"
 needs matched inputs, and that lands in the next-steps list.
 
@@ -1276,7 +1276,7 @@ should be, here's what a weekend of being wrong taught me:
 
 ## Next steps and improvements
 
-The honest list, roughly ordered by value per effort:
+Here's the list, roughly ordered by value per effort:
 
 - **More runs.** Statistics fix half of day one's weaknesses for
   free. Every future event day doubles as a data day.
@@ -1286,7 +1286,7 @@ The honest list, roughly ordered by value per effort:
 - **A controlled-input session when lot space materializes.**
   Fixed-speed step-steers for the roll and yaw transients per mode,
   constant-radius or spiral ramps for the true steady-state gradient
-  (the honest version of the number in FIG 06), and repeated passes
+  (the number FIG 06 only approximates), and repeated passes
   over one bump for a heave damping ratio per mode. Everything the
   graveyard wants lives here.
 - **Re-sync the IMU clock at every power-on**, or keep trusting
