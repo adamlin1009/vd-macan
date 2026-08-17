@@ -17,6 +17,11 @@ dataset; the morning session (10:16) is excluded.**
   (+4/+3 psi build).
 - Fuel: ~5/8 tank at start → ~1/2 at end (within the ¼–¾ convention).
 - Ambient/surface: TODO owner.
+- Run 4 (Sport+, 52.33 s) slower than adjacent runs due to a driving
+  mistake (owner-reported 2026-08-16), not the dampers.
+- Ride block: never scheduled — no venue exists for it (owner
+  2026-08-16); controlled-input design moved behind a venue trigger in
+  the plan post.
 
 ## Subjective impressions (owner, recalled 2026-08-16 — post-session,
 ## non-blind; per-run blind sheets were not filled on day 1)
