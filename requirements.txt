@@ -1,3 +1,3 @@
 # tools/ need only numpy (Python >= 3.9). matplotlib is optional, for
-# `tap_check.py --png` report plots only.
+# `imu_characterize.py --png` report plots only.
 numpy>=1.22

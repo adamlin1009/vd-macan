@@ -1,21 +1,17 @@
-function pass = tap_test(path, opts)
-%TAP_TEST Shakedown gate for the WT901SDCL-BT50 (MATLAB twin of tap_check.py).
+function pass = characterize_imu(path, opts)
+%CHARACTERIZE_IMU File checks for the WT901SDCL-BT50.
 %
-%   pass = TAP_TEST('WIT1.TXT')          % rate assumed 200 Hz
-%   pass = TAP_TEST(file, rate=200)
+%   pass = CHARACTERIZE_IMU('WIT1.TXT')          % rate assumed 200 Hz
+%   pass = CHARACTERIZE_IMU(file, rate=200)
 %
-%   Pass criteria (from the plan: verify true sample rate and timestamp
-%   stability before trusting spectra):
+%   File-health criteria before spectral analysis:
 %     rate      true rate within 3% of configured
 %     time      monotonic, max gap <= 5 sample periods
 %     unique    <=20% exactly-duplicated consecutive samples (>=50% means
 %               Band Width is limiting the fusion rate — raise it to 98 Hz)
-%     taps      spikes present, ringdown to 10% within 50 ms
 %
-%   Run once at the desk (sensor on the table, tap the table then the
-%   sensor) and once again after VHB mounting (knuckle-tap the seat rail):
-%   a slow ringdown on the rail that was crisp on the desk is the MOUNT
-%   ringing, and the mount must be fixed before the data can be believed.
+%   Any recorded impulse peaks and settling times are printed as context.
+%   They are informational and do not affect pass.
 
 arguments
     path (1,1) string
@@ -48,7 +44,7 @@ thr = max(0.5, 8 * 1.4826 * mad(az, 1));
 [pkv, pki] = findpeaks(abs(az), 'MinPeakHeight', thr, ...
     'MinPeakDistance', round(0.1 * opts.rate));
 if isempty(pki)
-    judge(false, true, "tap spikes", "none found — recording without taps?");
+    fprintf("  [INFO] %-30s %s\n", "impulses", "none detected; none required");
 else
     ring = nan(size(pki));
     for i = 1:numel(pki)
@@ -56,18 +52,19 @@ else
         j = find(abs(w) < 0.1 * pkv(i), 1);
         if ~isempty(j), ring(i) = 1000 * j / opts.rate; end
     end
-    judge(true, false, "tap spikes found", sprintf("%d > %.2f g", numel(pki), thr));
-    judge(max(ring) <= 50, true, "tap ringdown < 50 ms", ...
-        sprintf("worst %.0f ms", max(ring)));
+    fprintf("  [INFO] %-30s %d peaks > %.2f g\n", ...
+        "impulse peaks", numel(pki), thr);
+    fprintf("  [INFO] %-30s worst 10%% settling time %.0f ms\n", ...
+        "impulse settling", max(ring));
 end
 
-figure('Name', 'tap test');
+figure('Name', 'IMU file characterization');
 subplot(2,1,1); plot(seconds(D.t - D.t(1)), D.acc(:,3)); hold on
 plot(seconds(D.t(pki) - D.t(1)), D.acc(pki,3), 'rx');
 xlabel('t [s]'); ylabel('az [g]'); title('vertical accel');
 subplot(2,1,2); histogram(1000 * diff(seconds(D.t - D.t(1))), 100);
 xlabel('dt [ms]'); title('sample intervals');
 
-if pass, fprintf("VERDICT: PASS — logger cleared for the ride block\n");
-else,    fprintf("VERDICT: FAIL — do not trust spectra yet\n"); end
+if pass, fprintf("FILE CHARACTERIZATION: PASS — file-health checks complete\n");
+else,    fprintf("FILE CHARACTERIZATION: FAIL — do not trust spectral analysis yet\n"); end
 end

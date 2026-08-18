@@ -16,7 +16,7 @@ function Q = quarter_car_fit(ride, bump, opts)
 %   The caveat ships with the number: PASM is continuously variable and
 %   nonlinear; this identifies EQUIVALENT LINEAR damping per mode per band.
 %
-%   TODO after the ride block: implement once real PSDs exist — fitting
+%   Future work only after a suitable venue exists and real PSDs exist:
 %   synthetic data first would just launder assumptions into "results".
 
 arguments
@@ -27,5 +27,5 @@ arguments
     opts.kt_N_per_m (1,1) double = 250e3     % est. from pressure, disclose
 end
 
-error("quarter_car_fit: not implemented until ride-block data exists (by design).");
+error("quarter_car_fit: future-study stub; no controlled-input data exists");
 end
