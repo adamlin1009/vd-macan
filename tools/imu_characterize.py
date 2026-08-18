@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""tap_check.py — WT901SDCL-BT50 shakedown verifier (no MATLAB needed).
+"""imu_characterize.py — characterize a WT901SDCL-BT50 file.
 
 Parses a WitMotion log and reports true sample rate, timestamp health,
-duplicate-sample fraction (bandwidth-resampling detector), and tap-spike
-crispness against the shakedown pass criteria from the project plan.
+and duplicate-sample fraction (bandwidth-resampling detector). Impulse observations are informational;
+they are not an experiment or pass gate.
 
 Accepted inputs, auto-detected:
   1. Raw SD file (WIT1.TXT etc.): binary stream of either
@@ -19,9 +19,9 @@ App exports are recognized as BLE receive-stamped (timestamps clump in
 the SD-card file carries the authoritative timebase.
 
 Usage:
-  python3 tap_check.py WIT1.TXT [--rate 200] [--png report.png]
+  python3 imu_characterize.py WIT1.TXT [--rate 200] [--png report.png]
 
-Exit code 0 = all PASS, 1 = any FAIL (WARNs don't fail the gate).
+Exit code 0 = no file-health check failed, 1 = at least one FAIL.
 """
 import argparse
 import datetime as dt
@@ -196,7 +196,7 @@ def main():
     ap.add_argument("file")
     ap.add_argument("--rate", type=float, default=200.0,
                     help="configured record rate, Hz")
-    ap.add_argument("--png", default="tap_check_report.png")
+    ap.add_argument("--png", default="imu_characterization_report.png")
     args = ap.parse_args()
 
     rows, meta = load(args.file)
@@ -286,7 +286,8 @@ def main():
     else:
         checks.append(("timestamps", "WARN",
                        f"only {have_t}/{n} samples carry time — using "
-                       f"index/rate timebase; rely on brake-jab sync"))
+                       f"index/rate timebase; align against an independent "
+                       f"reference before cross-device analysis"))
         t_s = np.arange(n) / args.rate
 
     # --- duplicate-sample fraction (bandwidth resampling detector) ----
@@ -315,7 +316,7 @@ def main():
                    f"limiting: raise Band Width to 98 Hz+, or accept "
                    f"effective {args.rate/2:.0f} Hz)"))
 
-    # --- tap spikes ---------------------------------------------------
+    # --- optional impulse observations -------------------------------
     az = acc[:, 2] - np.median(acc[:, 2])
     mad = np.median(np.abs(az - np.median(az))) or 1e-4
     thr = max(0.5, 8 * 1.4826 * mad)
@@ -339,15 +340,15 @@ def main():
                        else float("inf"))
     if peaks:
         worst = max(ring_ms)
-        checks.append(("tap spikes found", "PASS",
+        checks.append(("impulse peaks (informational)", "INFO",
                        f"{len(peaks)} spikes > {thr:.2f} g"))
-        checks.append(("tap ringdown < 50 ms",
-                       "PASS" if worst <= 50 else "WARN",
-                       f"worst {worst:.0f} ms — after VHB mounting, a slow "
-                       f"ringdown means the mount (not the car) is ringing"))
+        checks.append(("impulse settling (informational)", "INFO",
+                       f"worst 10% settling time {worst:.0f} ms; this can "
+                       f"describe the recording or mount, but does not "
+                       f"change the file-health verdict"))
     else:
-        checks.append(("tap spikes", "WARN",
-                       "none detected — did the recording include taps?"))
+        checks.append(("impulses (informational)", "INFO",
+                       "none detected; no impulse event is required"))
 
     # --- report -------------------------------------------------------
     print(f"\n{args.file}: {n} samples, format {meta['format']}, "
@@ -357,8 +358,9 @@ def main():
     for name, stt, detail in checks:
         fail |= stt == "FAIL"
         print(f"  [{stt:4s}] {name:<{width}}  {detail}")
-    print("VERDICT:", "FAIL — do not trust spectra yet" if fail else
-          "PASS — logger cleared for the ride block")
+    print("FILE CHARACTERIZATION:",
+          "FAIL — do not trust spectral analysis yet" if fail else
+          "PASS — file-health checks complete")
 
     try:
         import matplotlib

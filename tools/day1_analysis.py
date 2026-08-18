@@ -33,7 +33,12 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from tap_check import parse_flag61, parse_standard, ACC_SCALE, GYR_SCALE  # noqa: E402
+from imu_characterize import (  # noqa: E402
+    ACC_SCALE,
+    GYR_SCALE,
+    parse_flag61,
+    parse_standard,
+)
 
 REPO = HERE.parent
 SESSION = REPO / "data" / "20260815_afternoon"
@@ -323,8 +328,8 @@ def fig_times(runs):
         x, y = xmap(i), ymap(t)
         parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="7" fill="{c}" '
                      f'stroke="{SURF}" stroke-width="2">'
-                     f'<title>Run {i+1} · {MODES[i]} · {t:.2f} s</title></circle>')
-        parts.append(txt(x, y - 14, f"{t:.2f}", 10, INK, "middle"))
+                     f'<title>Run {i+1} · {MODES[i]} · {t:.1f} s</title></circle>')
+        parts.append(txt(x, y - 14, f"{t:.1f}", 10, INK, "middle"))
         parts.append(txt(x, h - padb + 18, f"RUN {i+1}", 9, DIM, "middle"))
         parts.append(txt(x, h - padb + 31, MODES[i].upper(), 9,
                          C_N if MODES[i] == "Normal" else C_S, "middle"))
@@ -612,8 +617,8 @@ FIGURE_SPECS = [
     ("MAP", "fig01_course_map", 1,
      "RUN 6 · GPS PATH, SPEED-COLORED · VIRTUAL GATES", "RACEBOX MINI S · 25 HZ"),
     ("TIMES", "fig02_run_times", 2,
-     "RUN TIMES BY PASM MODE · GATES CALIBRATED TO OFFICIAL TIMES",
-     "STORM STADIUM · 2026-08-15"),
+     "RUN TIMES BY PASM MODE · GPS VIRTUAL-GATE ESTIMATES",
+     "SHOWN TO 0.1 S · CALIBRATION RMS 0.11 S · n=3 PER MODE"),
     ("SPEED", "fig03_speed_distance", 3,
      "SPEED VS COURSE DISTANCE · BEST RUN PER MODE", "RACEBOX MINI S · 25 HZ"),
     ("GG", "fig04_gg_diagram", 4,
@@ -678,7 +683,8 @@ def analyze():
 
 def print_summary(R):
     runs, imu = R["runs"], R["imu"]
-    print("runs:", [f"{r['time']:.2f}s" for r in runs])
+    run_times = [f"{r['time']:.1f}s" for r in runs]
+    print(f"runs: {run_times}; GPS virtual-gate calibration residual ~0.11 s")
     print("roll RMS deg/s:", [f"{x:.2f}" for x in imu["roll"]])
     print(f"clock offsets {imu['off_first']:.0f} -> {imu['off_last']:.0f} s; "
           f"xcorr {min(imu['xc']):.2f}-{max(imu['xc']):.2f}; "
@@ -686,7 +692,8 @@ def print_summary(R):
           f"norm N {imu['norm_n']:.2f} vs S+ {imu['norm_s']:.2f}")
     print(f"lat p95 {R['lat_p95']:.2f}, max {R['lat_max']:.2f}")
     print(f"roll gradient per run: {[f'{s:+.2f}' for s in R['rg_slopes']]}; "
-          f"N {R['rgn']:+.2f} S+ {R['rgs']:+.2f}; corrected grip p95 "
+          f"N {R['rgn']:+.2f} S+ {R['rgs']:+.2f}; exploratory "
+          f"roll-corrected grip p95 "
           f"{R['lat_p95_corr']:.2f} max {R['lat_max_corr']:.2f}")
 
 
@@ -871,8 +878,8 @@ REPO_INTRO = (
 REPO_CLOSING = (
     "The raw session folder, the processed tables, and the code that\n"
     "produced this post are already public in the\n"
-    f"[vd-macan repository]({REPO_URL}); the ride-block data joins it\n"
-    "when that block runs.")
+    f"[vd-macan repository]({REPO_URL}). Controlled-input data would be\n"
+    "a future study only after a suitable venue exists.")
 # Closing sentences seen in past template versions that should carry the
 # link; the first that matches is replaced, otherwise REPO_CLOSING is
 # appended as its own paragraph.
@@ -904,7 +911,7 @@ def write_post(R, path):
     figs = {key: figure(svgs[key], num, title, note)
             for key, _, num, title, note in FIGURE_SPECS}
     rows = "\n".join(
-        f"| {i+1} | {MODES[i]} | {runs[i]['time']:.2f} | "
+        f"| {i+1} | {MODES[i]} | {runs[i]['time']:.1f} | "
         f"{R['vmax'][i]/MPH2MPS:.1f} | {R['lat'][i]:.2f} |"
         for i in range(6))
     rg = R["rg_slopes"]
@@ -975,8 +982,8 @@ waiting weeks to collect? Saturday night I had two loggers' worth
 from my first instrumented autocross, a cold drink, and big plans.
 
 The data had other ideas. Before it told me one thing about the car,
-it caught me being wrong three times. And honestly, that turned out
-to be the best part.
+it caught me being wrong three times. That turned out to be the best
+part.
 
 So here's the whole story: six runs, two damper maps, a clock that
 flat-out lied to me, and a grip prediction I got to watch die in
@@ -1061,8 +1068,9 @@ Then I calibrated the pair against the two official times I
 remembered. The fit barely moved the start line. But it pulled the
 finish 23 m before the braking point, and once you see it, it's
 obvious: at 22 m/s you cross the lights flat-out and don't touch the
-brakes for another full second. After calibration the gates reproduce
-the officials to about a tenth.
+brakes for another full second. After calibration the GPS virtual-gate
+estimates are shown to tenths; the fit residual against those two
+remembered times is about 0.11 s rms.
 
 @@FIG_MAP@@
 
@@ -1092,8 +1100,8 @@ Back before any data existed, I put a number on the record: a
 2.2-ton-class SUV on touring all-seasons should top out around
 0.75–0.85 g. It felt safe. Maybe even a little generous.
 
-Measured, cornering hard across all six runs: 95th percentile
-@@P95@@ g. Peak @@MAX@@ g.
+The primary measurement is the raw roof RaceBox channel across all six
+runs: 95th percentile @@P95@@ g. Peak @@MAX@@ g.
 
 Not missed. Demolished. And per this project's standing rules, the
 dead prediction stays right here in the text where everyone can see
@@ -1192,13 +1200,13 @@ the seat the whole time. I was just asking it the wrong question.
 
 One real confound stays attached: I drove the Sport+ runs harder.
 Separating "the car responds faster" from "the driver asked for more"
-needs matched inputs, and that lands in the next-steps list.
+would need a future matched-input study after a suitable venue exists.
 
 ## Wringing the dataset: five derivations, one survivor
 
-With the clock solved I got greedy, honestly. Five derived analyses,
-everything I could think to squeeze out of two loggers. One produced
-a number I'll stand behind. Four died in ways worth writing down.
+With the clock solved I got greedy. Five derived analyses, everything
+I could think to squeeze out of two loggers. One produced a number
+I'll stand behind. Four died in ways worth writing down.
 
 The survivor is my favorite trick of the whole weekend: a roll sensor
 built out of disagreement. Here's the idea. An accelerometer bolted
@@ -1236,18 +1244,21 @@ exclude it. It's the seat's "Normal leans more," made visible. Two
 fingerprints back that reading: loosen the steadiness filter and the
 split shrinks toward overlap, and the binned means bow steeper at
 high g, meaning the relation is progressive and a single slope is a
-summary. The genuinely steady number needs a constant-radius test.
-Next-steps list.
+summary. A genuinely steady number would need a future constant-radius
+study, only after a suitable venue exists.
 
 The gradient pays off the grip section's promise too. The roof
 accelerometer over-reads lateral g through the same gravity-leak
 mechanism, so with \( G \approx 2.5 \) °/g, or
 \( G_\mathrm{rad} \approx 0.044 \),
 
-$$a_\mathrm{true} \approx \frac{a_\mathrm{meas}}{1 + G_\mathrm{rad}}$$
+$$a_\mathrm{roll\ adjusted} \approx
+\frac{a_\mathrm{meas}}{1 + G_\mathrm{rad}}$$
 
-which works out to about a 4% haircut: @@P95@@ g becomes **@@P95C@@
-g** sustained, and @@MAX@@ g becomes **@@MAXC@@ g** peak. Still
+As an exploratory correction, that works out to about a 4% haircut:
+@@P95@@ g becomes @@P95C@@ g sustained, and @@MAX@@ g becomes @@MAXC@@
+g peak. The raw roof values remain the primary measurement because the
+roll gradient is itself quasi-steady and approximate. Either reading is
 comfortably past my prediction. It stays dead.
 
 The graveyard, with causes of death:
@@ -1270,8 +1281,8 @@ math. It's controlled inputs.
 
 ## Steal these
 
-If you're thinking about instrumenting your own car, and honestly you
-should be, here's what a weekend of being wrong taught me:
+If you're thinking about instrumenting your own car, here's what a
+weekend of being wrong taught me:
 
 - Characterize the instrument before the experiment.
 - Register predictions before data exists.
@@ -1279,27 +1290,17 @@ should be, here's what a weekend of being wrong taught me:
 - Never trust an unmeasured clock.
 - When clever math dies, you need controlled inputs, not more math.
 
-## Next steps and improvements
+## Future studies, only after a suitable venue exists
 
-Here's the list, roughly ordered by value per effort:
+The current campaign was one autocross day. It is complete. No tire
+experiment, controlled-input ride measurement, step-steer set, or
+constant-radius set ran. None is scheduled.
 
-- **More runs.** Statistics fix half of day one's weaknesses for
-  free. Every future event day doubles as a data day.
-- **Fill the blind rating sheets, per run, before looking at
-  anything.** The subjective side deserves the same rigor as the
-  channels, and this weekend it didn't get it.
-- **A controlled-input session when lot space materializes.**
-  Fixed-speed step-steers for the roll and yaw transients per mode,
-  constant-radius or spiral ramps for the true steady-state gradient
-  (the number FIG 06 only approximates), and repeated passes
-  over one bump for a heave damping ratio per mode. Everything the
-  graveyard wants lives here.
-- **Re-sync the IMU clock at every power-on**, or keep trusting
-  envelope correlation. Either works now that the failure mode is
-  known and measured.
-
-Then the quarter-car fit and the semi-active study, once
-controlled-input data exists to feed them.
+If a suitable closed venue becomes available, future studies could add
+blind per-run ratings, fixed-speed step-steers, constant-radius or spiral
+ramps, and repeated passes over one bump. Only measured controlled-input
+data could support a quarter-car fit or semi-active study. Until then,
+those remain proposals, not results.
 """
 
 

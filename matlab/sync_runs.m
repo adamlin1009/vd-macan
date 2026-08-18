@@ -1,5 +1,5 @@
 function [lag_s, drift, info] = sync_runs(IMU, racebox)
-%SYNC_RUNS Align the IMU and RaceBox clocks via the brake-jab spikes.
+%SYNC_RUNS Unexecuted sketch for aligning IMU and RaceBox motion envelopes.
 %
 %   [lag_s, drift, info] = SYNC_RUNS(IMU, racebox)
 %
@@ -8,15 +8,14 @@ function [lag_s, drift, info] = sync_runs(IMU, racebox)
 %           else d(speed)/dt)
 %
 %   lag_s   seconds to ADD to IMU time so it lands on RaceBox (GPS) time
-%   drift   fractional clock drift estimated from start+end jab clusters
+%   drift   fractional clock drift estimated from start/end event clusters
 %           (NaN if only one cluster found); apply as
 %           t_true = t0 + (t - t0)*(1+drift) + lag_s
-%   info    struct: xcorr peak, jab cluster times per logger
+%   info    struct: xcorr peak, event cluster times per logger
 %
-%   Protocol (from the plan): three sharp stationary brake jabs at the
-%   START and END of each continuous recording. Coarse alignment comes
-%   from the RTC (Time calibration in the app); this refines it to ~one
-%   RaceBox sample (40 ms).
+%   This file has not been run. It expects recognizable motion near the
+%   start and end of a recording. The authoritative day-1 Python analysis
+%   instead aligns each complete course-run acceleration envelope.
 
 arguments
     IMU timetable
@@ -25,8 +24,8 @@ end
 
 fs = 25;                                     % common grid = RaceBox rate
 
-sp = jab_signal_imu(IMU, fs);
-sr = jab_signal_racebox(racebox, fs);
+sp = event_signal_imu(IMU, fs);
+sr = event_signal_racebox(racebox, fs);
 
 % coarse RTC offset limits the search window to +-60 s
 [c, lags] = xcorr(sr.x - mean(sr.x), sp.x - mean(sp.x), 60 * fs);
@@ -34,18 +33,18 @@ sr = jab_signal_racebox(racebox, fs);
 lag_s = lags(im) / fs + seconds(sr.t0 - sp.t0);
 
 info.xcorr_peak = pk / (norm(sr.x - mean(sr.x)) * norm(sp.x - mean(sp.x)));
-info.jabs_imu = find_clusters(sp);
-info.jabs_racebox = find_clusters(sr);
+info.events_imu = find_clusters(sp);
+info.events_racebox = find_clusters(sr);
 
 drift = NaN;
-if numel(info.jabs_imu) >= 2 && numel(info.jabs_racebox) >= 2
-    dp = info.jabs_imu(end) - info.jabs_imu(1);
-    dr = info.jabs_racebox(end) - info.jabs_racebox(1);
+if numel(info.events_imu) >= 2 && numel(info.events_racebox) >= 2
+    dp = info.events_imu(end) - info.events_imu(1);
+    dr = info.events_racebox(end) - info.events_racebox(1);
     drift = dr / dp - 1;
 end
 end
 
-function s = jab_signal_imu(IMU, fs)
+function s = event_signal_imu(IMU, fs)
 a = vecnorm(IMU.acc, 2, 2);
 a = abs(a - movmedian(a, 51));               % spikes over local baseline
 t = seconds(IMU.t - IMU.t(1));
@@ -55,7 +54,7 @@ s.t0 = IMU.t(1);
 s.tg = tg;
 end
 
-function s = jab_signal_racebox(rb, fs)
+function s = event_signal_racebox(rb, fs)
 if all(ismember(["gx","gy"], rb.Properties.VariableNames))
     a = hypot(rb.gx, rb.gy);
 else

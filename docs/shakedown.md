@@ -1,142 +1,109 @@
-# WT901SDCL-BT50 shakedown + in-car procedure
+# WT901SDCL-BT50 configuration, characterization, and session procedure
 
-Source of truth for the IMU's configuration and the per-session workflow.
-Config values verified against WitMotion's official BT50 docs
-(protocol V260506, user manual v25-04-18, datasheet v23-1227).
+This document records the configuration that produced the repository's
+IMU files, what day 1 established about those files, and the procedure for
+any later recording. Config values were checked against WitMotion's BT50
+protocol V260506, user manual v25-04-18, and datasheet v23-1227.
 
-## One-time config (at home, in the WITMOTION app, sensor connected)
+## Configuration used
 
-Open the sensor's **Configuration / Sensor Configuration** panel and set:
-
-| setting | value | why |
+| setting | value | reason or observed consequence |
 |---|---|---|
-| Algorithm | **Axis 6** | a car is a rolling magnetic disturbance; 9-axis lets the magnetometer yank yaw around. 6-axis yaw drifts slowly instead — RaceBox GPS owns absolute heading. Skip magnetic calibration entirely. |
-| Installation Direction | **Horizontal** | IMU mounts flat on the rail |
-| Return Rate | **200 Hz** | ships at 10 Hz — the single most important change |
-| Band Width | **98 Hz** | firmware pads duplicate samples whenever rate > bandwidth; at the default 20 Hz, "200 Hz" is really ~50 Hz repeated. 98 Hz makes 200 Hz real and still filters above the 4–25 Hz secondary-ride band. |
-| Acceleration range | 16 g/s2 (default) | headroom for taps and curbs; still 0.5 mg resolution |
-| Gyro range | 2000 deg/s (default) | fixed |
-| Gyro Auto Calibrate | leave **on** | re-zeros gyro bias when stationary |
-| Time calibration | **click it** | writes the Mac's clock into the RTC so SD timestamps land near real time; brake jabs do the fine alignment |
-| Device Name | optional: `MACAN-IMU` | avoids pairing the wrong "WIT" at a busy paddock |
+| Algorithm | **Axis 6** | A car is a poor magnetic environment. RaceBox GPS owns absolute heading. |
+| Installation Direction | **Horizontal** | The IMU was mounted flat with its printed X arrow forward. |
+| Return Rate | **200 Hz** | The SD file contains exact 5 ms frame ticks. |
+| Band Width | **98 Hz** | The fusion loop still repeats values, but the accelerometer produces about 104 distinct values per second. |
+| Acceleration range | **±16 g** | Saved in `data/sd_dump_20260816/SET.TXT`. |
+| Gyro range | **±2000 °/s** | Saved in `SET.TXT`. |
+| Gyro Auto Calibrate | **on** | Device setting used on day 1. |
+| Time calibration | set before the event | The device RTC still ran about 2% slow and its offset reset at power-on, so its clock is not an analysis reference. |
 
-Then **Calibrate → Acceleration**: IMU flat and still on a hard level
-surface, click, wait ~2 s. Accept when az reads ≈ 1.000 g and X/Y angles
-≈ 0°. Do NOT "Reset Z-axis Angle" at home — yaw zero is per-session, and
-in 6-axis mode it re-zeros itself at every power-on anyway.
+The accelerometer was leveled while the device was flat and still. In
+six-axis mode the fused Roll/Pitch angles are not usable under sustained
+lateral acceleration. The analysis uses rates and accelerations instead.
 
-Charge to full tonight (red LED off = charged; 2–3 h). Battery is good
-for 10–20 h of recording — a full event day.
+## Day-1 mount: what actually ran
 
-## Desk tap test (gate #1 — tonight)
+The AHRS IMU was on the center console at the cupholder perimeter, not on
+the seat rail. It sat flat with the printed X arrow pointing toward the
+nose: X forward, Y left, Z up. The in-car comparison after clock
+correction supports that mapping: IMU longitudinal tracks RaceBox
+longitudinal, lateral tracks lateral, and yaw tracks yaw.
 
-1. In the app's Storage section tick **RecordStatus** (this is the SD
-   record switch). Blue LED flashing = recording to internal storage.
-2. Record ~2 min: 30 s still → 5 sharp taps on the TABLE next to the
-   IMU, ~1 s apart → 30 s still → 3 taps on the IMU itself → still.
-3. Untick RecordStatus. **Power-cycle the IMU, watch the LED:** if the
-   blue flash returns on its own, record-on-boot persists and the power
-   switch is the whole track workflow. If it doesn't, RecordStatus must
-   be ticked from the phone app at each session start — note which.
-4. Offload the file (newest `WITn.TXT` via the app's File List → save, or
-   USB-C if a drive/serial device appears when plugged into the Mac) and
-   run: `python3 tools/tap_check.py WIT1.TXT`
+That location is part of the day-1 measurement definition. It should not
+be rewritten as a rigid chassis mount after the fact. Any future study
+must record its actual mount and orientation before comparing results.
 
-Pass gate (the plan's "verify true sample rate and timestamp stability
-before trusting spectra"):
-- true rate within 3% of 200 Hz
-- timestamps monotonic, no gap > 25 ms
-- duplicate consecutive samples ≤ 20% (≥ 50% = bandwidth still limiting)
-- taps visible, ringdown < 50 ms
+## Characterize each IMU file first
 
-If duplicates ≈ 50%: Band Width didn't take — set 98 Hz again, save,
-re-test. If rate ≈ 10 Hz: Return Rate didn't save. Escalation if the gate
-keeps failing (from the plan): Movella DOT-class replacement.
+From the repository root, run:
 
-## Mounting (tonight — VHB cures overnight)
+```sh
+python3 tools/imu_characterize.py data/20260815_afternoon/imu_sd/WIT39.TXT
+```
 
-- Spot: driver's-side seat rail, bare metal, where nothing hits it at
-  full seat travel — run the seat through its whole range FIRST.
-- Isopropyl-wipe both surfaces. VHB square on the IMU's flat base, press
-  firm 30 s. IMU flat, label up, **printed X arrow pointing at the nose**
-  (Y arrow at the driver's door) — ISO 8855 body axes: X forward, Y left,
-  Z up. Vertical ride channel = az; device Roll/Pitch = car roll/pitch.
-- Photograph the mounted orientation once — it's the axes contract for
-  every future session.
-- Knuckle-tap the rail next to the IMU tomorrow with a short recording
-  running: gate #2 is the same tap criteria on the mount. Crisp on the
-  desk but ringing on the rail = the MOUNT is resonating, not the car.
+The report covers frame rate, timestamp health, and consecutive duplicate
+values. Those checks describe the file before spectral work. The day-1 SD
+files established:
 
-## Per-session card (track)
+- 200 Hz frames on exact 5 ms device ticks;
+- occasional isolated RTC back-steps, which ingest sorts or segments;
+- about 48% repeated complete frames;
+- about 104 distinct accelerometer values per second and about 50 distinct
+  gyro values per second.
 
-1. Cold pressures to placard, log them (same gauge, eye level).
-2. **IMU IS IN THE CAR, mounted, blue LED flashing — physically verify
-   before the first launch.** And never trust its clock: the tick runs
-   ~2% slow and the offset re-arms every power-on (day-1 lesson — the
-   file clock trailed GPS by 131→181 s across the session and made
-   in-car data look like paddock stillness until envelope
-   cross-correlation against the RaceBox unmasked it; day1_analysis.py /
-   sync_runs handle the fit). IMU on ≥ 1 min before rolling.
-3. RaceBox on, wait for satellite fix, start recording.
-4. **Three sharp stationary brake jabs** — the clock-sync signature.
-   (Day 1 ran without them; course runs carry their own launch
-   fingerprint and envelope cross-correlation synced fine. Jabs remain
-   REQUIRED for ride-block passes, which have no such fingerprint.)
-5. Drive. Autocross: recordings restart per run, so jabs per run; ride
-   loops: one recording per config, jabs at start and end.
-6. End of recording: 15 s still → three jabs again → 5 s still → IMU off.
-7. notes.md: config name, PASM mode, hot pressures, fuel, ambient, surface.
-8. Between sessions IMU off; top up from a power bank if the day runs long.
+The repeated frames mean the configured frame rate is not the effective
+sensor-update rate. `day1_analysis.py` deduplicates before using the IMU
+channels. The roughly 104 Hz accelerometer update rate is sufficient for
+the project's stated 4–25 Hz ride band, but no controlled-input ride
+measurement has been collected.
 
-## Course-run driving protocol (autocross)
+Some archived desk and mount recordings contain deliberate impulses. The
+characterization tool reports detected peaks and settling time only as
+context. Those observations are informational, not a pass criterion and
+not an experiment in the current plan.
 
-Drive like a metronome: ~90–95% pace, identical inputs, **alternate PASM
-modes run-by-run** (day 1: N-S-N-S; day 2 reversed S-N-S-N) so course
-learning and tire heat-drift land on both modes equally. One crisp
-steering input per element — hold, unwind; a decisive turn-in IS a
-step-steer. Brake straight, then turn, then throttle. Slaloms = the best
-per-mode instrument: constant throttle, symmetric rhythm. Sport Chrono
-drivetrain dial FIXED all day — only the PASM button changes. PSM: what
-actually ran on day 1 was **PSM Sport** (owner-confirmed 2026-08-16, not
-fully off) — same state every run, record the exact cluster indication
-in notes.md; expect interventions to remain possible under hard braking
-and big yaw — a brake-zone spike in the data may be PSM, not dampers. Same line every run; walk the course 2–3× before
-run 1. **Last run of the day = the one limit run** (either mode, noted):
-that's the grip-ceiling / G-G datum testing the 0.75–0.85 g prediction —
-not part of the A/B. Mode into notes BEFORE the run; blind rating sheet
-immediately AFTER, before times, bench racing, or any data.
+## Day-1 clock and channel behavior
 
-## Offload (desk, per session)
+The IMU clock trailed the GPS reference by about 131 s at run 1 and 182 s
+at run 6. Its relative ticks were regular, but the absolute clock ran
+about 2% slow and the initial offset changed at power-on. Day 1 therefore
+uses a per-file linear clock model fitted from cross-correlation of the
+RaceBox and IMU acceleration envelopes. The driving itself is the sync
+signal. Per-run envelope correlations were 0.84–0.90, with an estimated
+residual within about ±0.13 s.
 
-One folder per session: `data/YYYYMMDD_<session>/` with `racebox.csv`,
-`imu_sd/WITn.TXT` (the device files, unrenamed — a new one opens per
-power-on), `notes.md`, and a `SHA256SUMS` of the raw files (this replaced
-the earlier one-folder-per-recording / `imu.bin` convention once day 1
-showed a session spans several device files). Then
-`tap_check.py imu_sd/WITn.TXT` as a quick health pass before anything
-else reads it. Column definitions for everything: `data/README.md`.
+The SD-card `WITn.TXT` files are the authoritative IMU channel. USB-C
+mounted the card as a drive. The app `.txt` export uses bursty phone
+receive timestamps and loses samples; the `.wplay` capture repeats stale
+values. Both are quick-look records only.
 
-**Channel discipline (settled 2026-08-16 against the SD card itself):**
-the analysis channel is the device's own WITn.TXT — and USB-C **does**
-mount the card as a drive ("NO NAME"), so offload = plug in, copy, done.
-The SD ground truth: 28-byte 0x61 frames at an exact 200 Hz on a clean
-5 ms clock (p99 jitter 0.0 ms), BUT ~48% of consecutive frames repeat
-all values — the fusion loop updates acc ~104 Hz and gyro ~50 Hz while
-frames write at 200. That satisfies the plan's ≥100 Hz-to-storage
-requirement and covers the 4–25 Hz secondary-ride band; parse with
-`ingest_imu(..., dedupe=true)` for spectra. Files roll over at ~12 MB
-and a new file opens per power-on; occasional single RTC back-steps
-appear (ingest sorts them). The app's .txt export (fresh-looking values,
-burst timestamps, 2.5–6% loss) and .wplay (true device timestamps, stale
-values) are both quick-look only — the "fresh" .txt values are app-side
-cosmetics, disagreeing with the frames the device actually stores.
+## Procedure for any later recording
 
-## RaceBox (landed + configured 2026-08-14)
+Another autocross is not part of the current plan. If one is recorded as
+additional data, use this card:
 
-Remaining before venue day: record one short outdoor mini-session (it
-needs GNSS sky view — a driveway minute with a few hand-shakes is
-enough), export the CSV from the RaceBox app, and push it through
-`ingest_racebox.m` (it fails loudly and prints the columns it found —
-expected on first contact; the mapping gets hardened against the real
-export, and `meta.rate_true` should read ≈ 25 Hz). Dash mount with sky
-view, never the spare well.
+1. Set cold pressures to placard with the reference gauge and log them.
+2. Record the IMU's actual mount, orientation, and PASM mode. Verify the
+   storage LED before moving.
+3. Start the RaceBox after GNSS fix. Keep it where it has sky view.
+4. Keep both loggers running through recognizable driving. Align them in
+   post by acceleration-envelope cross-correlation.
+5. Alternate PASM mode only if the session is explicitly an A/B set. Keep
+   powertrain and PSM settings fixed and record their cluster indication.
+6. Record per-run subjective ratings before looking at times or plots.
+7. Log hot pressures, fuel, ambient conditions, surface, and mistakes.
+8. Offload without renaming device files, compute `SHA256SUMS`, then run
+   `imu_characterize.py` before analysis.
+
+One session folder contains `racebox.csv`, the original `imu_sd/WITn.TXT`
+files, `notes.md`, and raw-file checksums. Column definitions are in
+[`data/README.md`](../data/README.md).
+
+## Future studies, venue required
+
+There was no tire experiment, controlled-input ride measurement,
+step-steer set, or constant-radius set on day 1. Those are not committed
+current work. They may be designed as future studies only after a suitable
+closed venue exists. Until then, this procedure does not claim damping
+ratio, steady understeer gradient, or matched-input PASM results.

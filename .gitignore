@@ -2,6 +2,6 @@
 __pycache__/
 *.pyc
 *.asv
-tap_check_report.png
+imu_characterization_report.png
 work/
 .DS_Store

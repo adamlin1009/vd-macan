@@ -14,7 +14,7 @@ entered an autocross.
 The data caught me being wrong three times before it told me anything
 about the car.
 
-A thread about dampers, lying clocks, and honest measurement:
+A thread about dampers, lying clocks, and measured reality:
 
 2/
 The experiment: PASM adaptive dampers have a Normal map and a Sport+
@@ -64,7 +64,7 @@ The fix was free.
 
 Each run is 56 seconds of unmistakable car motion. Cross-correlate
 the acceleration envelope against GPS, and every file snaps to true
-time within ~0.1 s.
+time with an estimated calibration residual of about 0.11 s.
 
 Your data often carries its own sync signal. Find the fingerprint.
 
@@ -74,15 +74,16 @@ No timing equipment? GPS is timing equipment.
 Launch = speed rising from zero. Finish = the last hard brake.
 
 Gates built from six trajectories landed within 0.7 m of each other.
-Calibrated to two remembered official times, every run reproduces to
-about a tenth.
+Calibrated to two remembered official times, the GPS virtual-gate
+estimates are shown to tenths.
 
 9/
 Wrong #3. Before the event I published a prediction: this SUV on
 all-season tires tops out at 0.75–0.85 g.
 
-Measured: 0.93 g sustained, 1.09 g peak, after correcting for body
-roll.
+Raw roof measurement: 0.97 g sustained, 1.14 g peak.
+
+An exploratory roll correction gives 0.93 g sustained, 1.09 g peak.
 
 Publicly wrong. That was the point of writing it down first.
 
@@ -119,7 +120,7 @@ Normal run above every Sport+ run.
 On identical springs? Careful: autocross is never truly steady. The
 damper's grip on lean-in-motion is what shows through.
 
-Reading a number honestly beats getting one.
+Keeping the caveat attached beats polishing the number.
 
 14/
 I tried five derived analyses. One survived.
@@ -141,11 +142,12 @@ If you instrument your own car, steal these:
 • When clever math dies, you need controlled inputs, not more math
 
 16/
-Next: more runs (every event day is a data day), the rating sheets
-done properly, and a controlled-input session when a lot
-materializes. Step-steers, constant-radius ramps, one repeatable
-bump. That's where damping ratio per mode comes from.
+Current study: one autocross day, complete. No tire experiment or
+controlled-input work happened.
 
-Full write-up, all seven figures, raw data: [LINK]
+Future study, only after a suitable venue exists: rating sheets,
+step-steers, constant-radius ramps, and a repeatable bump.
+
+Full write-up, all six figures, raw data: [LINK]
 
 Everything gets published. Including the mistakes.

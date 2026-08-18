@@ -47,7 +47,7 @@ Scales: acceleration = raw/32768 × 16 g; angular rate = raw/32768 ×
 2000 deg/s; angle = raw/32768 × 180 deg. Frames arrive at exactly 200 Hz on
 the device RTC (5 ms ticks), but the fusion loop updates the accelerometer
 at ~104 Hz and the gyro at ~50 Hz, so ~48% of consecutive frames repeat all
-values — dedupe (`tap_check.py`, `dedupe()` in `day1_analysis.py`,
+values — dedupe (`imu_characterize.py`, `dedupe()` in `day1_analysis.py`,
 `ingest_imu(..., dedupe=true)`) before spectra or sample counts. The RTC
 runs ~2% slow and its offset re-arms at each power-on; never use it
 uncorrected. Axes (ISO 8855, mount verified in-car): X forward, Y left,
@@ -56,7 +56,7 @@ roll/pitch/yaw angles are unusable under sustained lateral acceleration
 (6-axis mode, no magnetometer) and are not used.
 
 WIT39 (29.6 min) spans runs 1–4, WIT40 spans runs 5–6; WIT38/WIT41 are
-short pre/post fragments. Parsers: `tools/tap_check.py` (`parse_flag61`),
+short pre/post fragments. Parsers: `tools/imu_characterize.py` (`parse_flag61`),
 `matlab/ingest_imu.m`.
 
 ### app_capture/ — quick-look only, not used in analysis
@@ -99,7 +99,7 @@ since RaceBox `t0`.
 Every file on the IMU's storage as copied on 2026-08-16 (USB-C mounts it
 as a drive): `SET.TXT` (saved device configuration: 200 Hz, 98 Hz
 bandwidth, ±16 g, ±2000 deg/s, horizontal mount) and `WIT0.TXT` …
-`WIT45.TXT` — desk tap tests, the shakedown, the excluded morning session,
+`WIT45.TXT` — desk impulse recordings, the shakedown, the excluded morning session,
 and the analyzed afternoon (WIT38–41 here are byte-identical to the
 copies in `20260815_afternoon/imu_sd/`). Kept whole for provenance;
 nothing outside WIT38–41 is used.

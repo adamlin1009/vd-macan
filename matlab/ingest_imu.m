@@ -55,8 +55,8 @@ meta.dup_frac = mean(all(diff(D.acc) == 0, 2));
 % configured 200 Hz on a clean 5 ms clock, but its fusion loop updates
 % acc ~104 Hz and gyro ~50 Hz, so ~48% of consecutive frames repeat all
 % values. dedupe=true keeps only frames where something changed — the
-% honest effective-rate series to resample for spectra. Leave false for
-% tap_test (it judges the frame stream itself).
+% effective-rate series to resample for spectra. Leave false when
+% characterize_imu reports the complete frame stream.
 if opts.dedupe
     keep = [true; any(diff(D.acc) ~= 0, 2) | any(diff(D.gyr) ~= 0, 2) ...
             | any(diff(D.ang) ~= 0, 2)];

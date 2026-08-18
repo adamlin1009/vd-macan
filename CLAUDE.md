@@ -17,7 +17,8 @@ Non-negotiables, inline (details and the rest in RULES.md):
   `python3 tools/day1_analysis.py --post <website>/content/log/2026-08-16-six-runs-two-damper-maps.md`.
 - Post prose rules apply to everything publish-bound here (thread
   drafts, docs that feed posts): human voice, no em dashes,
-  "AHRS IMU" never "puck", no brake-jab mentions, honesty never cut.
+  "AHRS IMU" never "puck", sync by acceleration-envelope correlation,
+  and keep every evidentiary caveat.
 - The IMU's known quirks are characterized, not folklore: 200 Hz
   frames but ~104 Hz distinct accel / ~50 Hz gyro (dedupe before
   spectra), clock ~2% slow with per-power-on offset (sync by envelope

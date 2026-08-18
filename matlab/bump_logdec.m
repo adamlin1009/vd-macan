@@ -3,12 +3,12 @@ function B = bump_logdec(D, t_bump, opts)
 %
 %   B = BUMP_LOGDEC(D, t_bump)   % t_bump = approximate bump time [s from start]
 %
-%   Method (the headline number of the ride block): band-pass az around the
+%   Future-study method: band-pass az around the
 %   body heave mode (0.5-4 Hz), find the decay peaks after the bump, fit
 %   log decrement delta = ln(x_n/x_{n+1}) -> zeta = delta/sqrt(4pi^2+delta^2).
 %   Returns peaks used, per-pair zeta, zeta_mean, f_heave estimate.
 %
-%   Honest caveat carried from the plan: PASM is continuously variable and
+%   Important caveat carried from the plan: PASM is continuously variable and
 %   nonlinear; this is an EQUIVALENT LINEAR damping ratio per mode — a
 %   summary of behavior, not a copy of the valve map.
 

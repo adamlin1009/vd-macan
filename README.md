@@ -1,40 +1,49 @@
 # vd-macan — instrumenting a Porsche Macan S
 
 Raw data, processed data, and the code behind the Macan S instrumentation
-project: a road car (95B Macan S, PASM adaptive dampers on steel springs,
-Pirelli Scorpion Verde All-Season) fitted with two small loggers to ask
-one question well — **do the PASM Normal and Sport+ damper calibrations
-produce measurable, mode-attributable differences in transient response,
-and do those differences match what the driver reports?**
+project: one autocross day with a road car (95B Macan S, PASM adaptive
+dampers on steel springs, Pirelli Scorpion Verde All-Season) and two small
+loggers. The question is narrow: **do the PASM Normal and Sport+ damper
+calibrations produce measurable, mode-attributable differences in
+transient response, and do those differences match what the driver
+reports?**
 
 The write-ups live on the site's engineering log; this repository is
 their evidence. Every number and figure in the day-1 post is regenerated
 from the raw logs by one script (below). The living plan, with registered
-predictions and a dated history of changes, is the plan post
-([source](https://github.com/adamlin1009/website/blob/main/content/log/2026-08-05-macan-instrumentation-plan.md));
-the first data post is *Six runs, two damper maps*
-([source](https://github.com/adamlin1009/website/blob/main/content/log/2026-08-16-six-runs-two-damper-maps.md)).
+predictions and a dated history of changes, is
+[*Instrumenting a Macan S: the plan*](https://adaml.in/log/2026-08-05-macan-instrumentation-plan);
+the first data post is
+[*Six runs, two damper maps*](https://adaml.in/log/2026-08-16-six-runs-two-damper-maps).
+
+The completed campaign is that one autocross day. There was no tire
+experiment, instrument impulse experiment, or controlled-input ride work.
+Tire work and controlled-input ride, step-steer, or constant-radius work
+are future studies only after a suitable venue exists. Nothing in those
+future studies is scheduled or reported as a result here.
 
 ## Reproduce
 
-Python ≥ 3.9 and numpy. No MATLAB needed for anything reported so far.
+Python ≥ 3.9 and numpy. Python is the authoritative analysis for every
+reported result; MATLAB is not required.
 
 ```sh
 git clone https://github.com/adamlin1009/vd-macan
 cd vd-macan
 pip install -r requirements.txt                    # numpy only
-shasum -a 256 -c data/20260815_afternoon/SHA256SUMS # raw-file integrity
+(cd data/20260815_afternoon && shasum -a 256 -c SHA256SUMS)
+(cd data/sd_dump_20260816 && shasum -a 256 -c SHA256SUMS)
 python3 tools/day1_analysis.py                     # ~3 s
 ```
 
 Expected console output (these are the numbers in the post):
 
 ```
-runs: ['53.11s', '51.98s', '52.12s', '52.33s', '51.90s', '51.21s']
+runs: ['53.1s', '52.0s', '52.1s', '52.3s', '51.9s', '51.2s']; GPS virtual-gate calibration residual ~0.11 s
 roll RMS deg/s: ['4.32', '4.81', '4.28', '4.59', '4.55', '4.95']
 clock offsets 131 -> 182 s; xcorr 0.84-0.90; ay corr +0.79..+0.90; norm N 3.24 vs S+ 3.28
 lat p95 0.97, max 1.14
-roll gradient per run: ['+2.65', '+1.94', '+3.03', '+2.26', '+3.12', '+2.09']; N +2.93 S+ +2.10; corrected grip p95 0.93 max 1.09
+roll gradient per run: ['+2.65', '+1.94', '+3.03', '+2.26', '+3.12', '+2.09']; N +2.93 S+ +2.10; exploratory roll-corrected grip p95 0.93 max 1.09
 processed -> data/20260815_afternoon/processed
 figures -> figures/day1
 ```
@@ -46,7 +55,7 @@ SVGs). Add `--post PATH` to also assemble the log post markdown, or
 sample rate, timestamp health, duplicate fraction):
 
 ```sh
-python3 tools/tap_check.py data/20260815_afternoon/imu_sd/WIT39.TXT
+python3 tools/imu_characterize.py data/20260815_afternoon/imu_sd/WIT39.TXT
 ```
 
 ## Day 1 — Storm Stadium, 2026-08-15 (SCCA Cal Club autocross)
@@ -61,12 +70,12 @@ including the driver's (non-blind, next-day) impressions, are in
 
 | run | PASM | time [s] | vmax [mph] | peak lat [g] | roll-rate RMS [°/s] | roll gradient [°/g] |
 |---|---|---|---|---|---|---|
-| 1 | Normal | 53.11 | 53.3 | 1.05 | 4.32 | 2.65 |
-| 2 | Sport+ | 51.98 | 57.1 | 1.09 | 4.81 | 1.94 |
-| 3 | Normal | 52.12 | 55.1 | 1.06 | 4.28 | 3.03 |
-| 4 | Sport+ | 52.33 | 55.3 | 1.04 | 4.59 | 2.26 |
-| 5 | Normal | 51.90 | 53.5 | 1.06 | 4.55 | 3.12 |
-| 6 | Sport+ | 51.21 | 55.6 | 1.14 | 4.95 | 2.09 |
+| 1 | Normal | 53.1 | 53.3 | 1.05 | 4.32 | 2.65 |
+| 2 | Sport+ | 52.0 | 57.1 | 1.09 | 4.81 | 1.94 |
+| 3 | Normal | 52.1 | 55.1 | 1.06 | 4.28 | 3.03 |
+| 4 | Sport+ | 52.3 | 55.3 | 1.04 | 4.59 | 2.26 |
+| 5 | Normal | 51.9 | 53.5 | 1.06 | 4.55 | 3.12 |
+| 6 | Sport+ | 51.2 | 55.6 | 1.14 | 4.95 | 2.09 |
 
 Full precision in [`processed/runs.csv`](data/20260815_afternoon/processed/runs.csv);
 definitions in [`processed/summary.json`](data/20260815_afternoon/processed/summary.json).
@@ -75,36 +84,39 @@ definitions in [`processed/summary.json`](data/20260815_afternoon/processed/summ
 
 **What the data says so far**
 
-- **Run times.** Gate times reproduce the two remembered official times to
-  ~0.1 s rms. Sport+ holds the best time and the mode means sit ~0.5 s
+- **Run times.** GPS virtual-gate estimates are shown to tenths. The gate
+  calibration residual against two remembered official times is about
+  0.11 s rms. Sport+ holds the best time and the mode means sit ~0.5 s
   apart, but run 4 (Sport+) was slower than both adjacent Normal runs and
   n = 3 per mode is thin. Not a result; a table.
-- **Grip ceiling.** Registered prediction: 0.75–0.85 g. Measured while
-  cornering (roof RaceBox, all runs): p95 0.97 g, peak 1.14 g raw;
-  0.93 / 1.09 g after removing the gravity leak from body roll at
-  ~2.5 °/g. Prediction busted upward; it stays in the text.
+- **Grip ceiling.** Registered prediction: 0.75–0.85 g. The primary
+  measurements are the raw roof RaceBox values across all runs: p95
+  0.97 g and peak 1.14 g. An exploratory correction for the estimated
+  body-roll gravity leak gives 0.93 g and 1.09 g. Prediction busted
+  upward; it stays in the text.
 - **Roll rate.** IMU roll-rate RMS is *higher* in Sport+ (4.79 vs
   4.38 °/s, +9%); normalized by lateral-acceleration rate it is a wash
   (3.28 vs 3.24). Consistent with a firmer map making the body follow its
-  inputs faster — or with the driver pushing harder in Sport+. Matched
-  inputs (step-steers, the ride block) are needed to separate the two.
+  inputs faster — or with the driver pushing harder in Sport+. A future
+  matched-input study could separate the two, but only after a suitable
+  venue exists.
 - **Roll gradient (quasi-steady).** From the RaceBox alone, roll angle =
   accelerometer lateral minus v·yaw-rate/g at quasi-steady cornering
   samples: Normal 2.93 °/g (2.65–3.12), Sport+ 2.10 °/g (1.94–2.26); the
   per-run ranges do not overlap. A true steady-state gradient cannot split
   on unchanged springs and bars, so this is read as the dampers' transient
   contribution bleeding into a not-quite-steady measurement — the split
-  shrinks as the steadiness mask is loosened. The steady number waits for
-  constant-radius testing.
+  shrinks as the steadiness mask is loosened. A true steady number would
+  require a future constant-radius study at a suitable venue.
 
 ![Roll angle vs lateral g by PASM mode, quasi-steady samples](figures/day1/fig06_roll_gradient.svg)
 
-**Negatives worth recording** (all need controlled inputs, i.e. the ride
-block): roll transfer function per mode (coherence < 0.6 everywhere —
-road and driver excite roll together on a course); launch/brake pitch
-transients per mode (driver variance, roof lever arm); dive/squat
-gradients (autocross braking is never quasi-steady, r ≈ 0); repeated-bump
-ringdowns (three vertical events all session, none recurring).
+**Negatives worth recording:** roll transfer function per mode (coherence
+< 0.6 everywhere — road and driver excite roll together on a course);
+launch/brake pitch transients per mode (driver variance, roof lever arm);
+dive/squat gradients (autocross braking is never quasi-steady, r ≈ 0);
+repeated-bump ringdowns (three vertical events all session, none
+recurring). Controlled-input follow-up is a future study only.
 
 ## Instruments, as characterized
 
@@ -117,7 +129,8 @@ ringdowns (three vertical events all session, none recurring).
 | axes | GForceX + = accelerating; GForceY + and GyroZ + = left turn (ISO 8855 left-positive; GyroZ vs GPS heading rate r = 0.92, v·yaw vs GForceY r = 0.98) | ISO 8855 body axes: X forward, Y left, Z up. Verified in-car after the clock fix: ax↔GPS long, ay↔GPS lat (r ≤ 0.90), yaw↔yaw (r ≤ 0.91) |
 | trust | lateral g carries a body-roll gravity leak (~4% at 2.5 °/g); no roll channel of its own | 6-axis fused Roll/Pitch angles are unusable under sustained lateral acceleration — rates and accelerations only |
 
-Config, tap-test gate, and per-session procedure: [`docs/shakedown.md`](docs/shakedown.md).
+Configuration, observed file behavior, mounting record, and session
+procedure: [`docs/shakedown.md`](docs/shakedown.md).
 
 ## Method notes (short — the code is the reference)
 
@@ -151,8 +164,8 @@ Config, tap-test gate, and per-session procedure: [`docs/shakedown.md`](docs/sha
 
 - n = 3 runs per mode, competition runs, one driver, one day.
 - Mode-to-mode comparisons on course runs cannot separate "the car
-  responded faster" from "the driver asked for more". Matched-input tests
-  are the fix and have not run yet.
+  responded faster" from "the driver asked for more". Controlled-input
+  work has not run and remains a future study after a venue exists.
 - The subjective impressions in `notes.md` were recalled the day after,
   non-blind. Blind per-run rating sheets are part of the protocol going
   forward.
@@ -186,42 +199,21 @@ data/
 figures/day1/                     standalone SVGs of the six post figures
 tools/
   day1_analysis.py                the day-1 analysis: gates → clock → metrics → tables/figures/post
-  tap_check.py                    IMU file parser + instrument characterization gate
+  imu_characterize.py             IMU parser + file characterization report
   export_site_runs.py             RaceBox-only per-run export for the website's trace
-matlab/                           planned pipeline (see status below)
+matlab/                           unverified future work; status in matlab/README.md
 docs/
-  shakedown.md                    IMU config, tap-test gate, per-session card, protocol
+  shakedown.md                    IMU config, file behavior, mount record, procedure
   day1-thread.md                  plain-language thread version of the day-1 write-up
 ```
 
-## MATLAB pipeline (status)
+## Analysis authority and MATLAB status
 
-The plan names MATLAB as the analysis home for the ride block, the
-quarter-car identification, and the semi-active study. Those stages have
-not run yet, and **no `.m` file has been executed against this dataset in
-this repository's history** (the analysis machine has no MATLAB or
-Octave). The day-1 numbers come from `tools/day1_analysis.py`. Where the
-two overlap, the MATLAB mirrors the Python: `split_runs.m` ↔ `find_runs`,
-`ingest_imu.m` ↔ the `tap_check.py` parsers, `ingest_racebox.m` ↔
-`load_racebox` (with unit validation added). Treat the rest as
-written-not-tested until this section says otherwise.
-
-| stage | file | status |
-|---|---|---|
-| ingest IMU | `ingest_imu.m` | written; mirrors the verified Python parser |
-| ingest RaceBox | `ingest_racebox.m` | written against the real export format |
-| run gates | `split_runs.m` | written; mirrors `find_runs` |
-| clock sync | `sync_runs.m` | written (brake-jab cross-correlation + drift) |
-| shakedown gate | `tap_test.m` / `tap_check.py` | Python version used and verified |
-| ride PSD + bands | `ride_psd.m` + `iso2631_weight.m` | written; waits on the ride block |
-| bump decay → ζ | `bump_logdec.m` | written; waits on the ride block |
-| understeer gradient | `spiral_usg.m` | written; waits on constant-radius testing |
-| step-steer metrics | `stepsteer_metrics.m` | written; waits on matched-input runs |
-| quarter-car ID | `quarter_car_fit.m` | stub by design |
-| semi-active study | `semiactive_sim.m` | stub by design |
-
-Device constants baked into the ingest: WT901SDCL-BT50, ±16 g / ±2000 °/s
-/ ±180°, scale = raw/32768 × full-scale, 200 Hz frames, 98 Hz bandwidth.
+Python is the authoritative analysis and the only implementation used to
+produce the reported day-1 results. The preserved MATLAB files are
+unverified future work. None has been executed against this dataset, and
+none supports a published result. Detailed file-by-file scope is in
+[matlab/README.md](matlab/README.md).
 
 ## Standing rules
 
