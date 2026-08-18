@@ -94,30 +94,66 @@ def ramp_color(t):
 
 
 # ---------------------------------------------------------------- racebox
-def load_racebox():
-    lines = (SESSION / "racebox.csv").read_text(errors="replace").splitlines()
+# The RaceBox app writes Speed in whichever unit the app is set to. Snap the
+# median column/GPS-ground-speed ratio to a known unit; refuse anything else.
+SPEED_UNITS = {"m/s": 1.0, "km/h": 1 / 3.6, "mph": MPH2MPS, "kn": 0.514444}
+RB_COLS = ("Time", "Latitude", "Longitude", "Speed", "GForceX", "GForceY",
+           "GyroZ")
+
+
+def load_racebox(path=None):
+    """RaceBox "Track Session" CSV -> dict of arrays (columns by header name).
+
+    Preamble of Key,Value lines, then the header row starting "Record,".
+    Speed is converted to m/s after validating its unit against GPS ground
+    speed from position deltas.
+    """
+    path = SESSION / "racebox.csv" if path is None else Path(path)
+    lines = path.read_text(errors="replace").splitlines()
     hdr = next(i for i, l in enumerate(lines) if l.startswith("Record,"))
-    rows = [l.split(",") for l in lines[hdr + 1:] if l.count(",") >= 12]
-    t = [dt.datetime.fromisoformat(p[1]) for p in rows]
+    names = [c.strip() for c in lines[hdr].split(",")]
+    missing = [c for c in RB_COLS if c not in names]
+    assert not missing, f"racebox.csv: missing columns {missing}; found {names}"
+    col = {c: names.index(c) for c in RB_COLS}
+    rows = [l.split(",") for l in lines[hdr + 1:]
+            if l.count(",") >= len(names) - 1]
+    t = [dt.datetime.fromisoformat(p[col["Time"]]) for p in rows]
+
+    def num(name):
+        return np.array([float(p[col[name]]) for p in rows])
+
     d = {
         "t0": t[0],
         "ts": np.array([(x - t[0]).total_seconds() for x in t]),
-        "lat": np.array([float(p[2]) for p in rows]),
-        "lon": np.array([float(p[3]) for p in rows]),
-        "v": np.array([float(p[5]) for p in rows]) * MPH2MPS,
-        "gx": np.array([float(p[6]) for p in rows]),
-        "gy": np.array([float(p[7]) for p in rows]),
-        "yaw": np.array([float(p[12]) for p in rows]),
+        "lat": num("Latitude"),
+        "lon": num("Longitude"),
+        "gx": num("GForceX"),
+        "gy": num("GForceY"),
+        "yaw": num("GyroZ"),
     }
     la0 = np.radians(d["lat"].mean())
     lo0 = np.radians(d["lon"].mean())
     d["E"] = R_E * np.cos(la0) * (np.radians(d["lon"]) - lo0)
     d["N"] = R_E * (np.radians(d["lat"]) - la0)
+
+    speed_col = num("Speed")
+    dts = np.maximum(np.diff(d["ts"]), 1e-3)
+    v_gps = np.hypot(np.diff(d["E"]), np.diff(d["N"])) / dts
+    moving = v_gps > 3
+    if moving.sum() > 100:
+        ratio = float(np.median(speed_col[1:][moving] / v_gps[moving]))
+        unit = min(SPEED_UNITS, key=lambda u: abs(1 / SPEED_UNITS[u] - ratio))
+        assert abs(1 / SPEED_UNITS[unit] - ratio) < 0.25 / SPEED_UNITS[unit], (
+            f"racebox.csv: Speed/GPS ratio {ratio:.3f} matches no known unit")
+    else:                       # too little motion to tell; app default
+        unit = "mph"
+    d["speed_unit"] = unit
+    d["v"] = speed_col * SPEED_UNITS[unit]
     return d
 
 
 def find_runs(d):
-    """Bouts + calibrated gates + crossing times. Mirrors split_runs.m."""
+    """Movement bouts, geometric anchors, calibrated gates, crossing times."""
     ts, v, gx, E, N = d["ts"], d["v"], d["gx"], d["E"], d["N"]
     mov = v > 4
     edges = np.flatnonzero(np.diff(mov.astype(int)))
@@ -209,7 +245,11 @@ def load_imu_file(name, t0):
     t = np.array([(r["t"] - t0).total_seconds() for r in rows])
     acc = np.array([r["acc"] for r in rows], float) * ACC_SCALE
     gyr = np.array([r["gyr"] for r in rows], float) * GYR_SCALE
-    return t, acc, gyr
+    # The device RTC occasionally steps back ~170 ms (see imu_characterize's
+    # "timestamps monotonic" WARN); the interpolations below need a
+    # monotonic time base, so order by device time (stable sort).
+    order = np.argsort(t, kind="stable")
+    return t[order], acc[order], gyr[order]
 
 
 def dedupe(acc, gyr):

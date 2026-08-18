@@ -47,17 +47,15 @@ Scales: acceleration = raw/32768 × 16 g; angular rate = raw/32768 ×
 2000 deg/s; angle = raw/32768 × 180 deg. Frames arrive at exactly 200 Hz on
 the device RTC (5 ms ticks), but the fusion loop updates the accelerometer
 at ~104 Hz and the gyro at ~50 Hz, so ~48% of consecutive frames repeat all
-values — dedupe (`imu_characterize.py`, `dedupe()` in `day1_analysis.py`,
-`ingest_imu(..., dedupe=true)`) before spectra or sample counts. The RTC
-runs ~2% slow and its offset re-arms at each power-on; never use it
-uncorrected. Axes (ISO 8855, mount verified in-car): X forward, Y left,
+values — dedupe (`imu_characterize.py`, `dedupe()` in `day1_analysis.py`)
+before spectra or sample counts. The RTC runs ~2% slow and its offset
+re-arms at each power-on; never use it uncorrected. Axes (ISO 8855, mount verified in-car): X forward, Y left,
 Z up; roll rate = gx, pitch rate = gy, yaw rate = gz. The fused
 roll/pitch/yaw angles are unusable under sustained lateral acceleration
 (6-axis mode, no magnetometer) and are not used.
 
 WIT39 (29.6 min) spans runs 1–4, WIT40 spans runs 5–6; WIT38/WIT41 are
-short pre/post fragments. Parsers: `tools/imu_characterize.py` (`parse_flag61`),
-`matlab/ingest_imu.m`.
+short pre/post fragments. Parser: `tools/imu_characterize.py` (`parse_flag61`).
 
 ### app_capture/ — quick-look only, not used in analysis
 

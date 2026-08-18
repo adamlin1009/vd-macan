@@ -25,7 +25,7 @@ future studies is scheduled or reported as a result here.
 ## Reproduce
 
 Python ≥ 3.9 and numpy. Python is the authoritative analysis for every
-reported result; MATLAB is not required.
+reported result, and the only one: there is no MATLAB in this repository.
 
 ```sh
 git clone https://github.com/adamlin1009/vd-macan
@@ -201,19 +201,28 @@ tools/
   day1_analysis.py                the day-1 analysis: gates → clock → metrics → tables/figures/post
   imu_characterize.py             IMU parser + file characterization report
   export_site_runs.py             RaceBox-only per-run export for the website's trace
-matlab/                           unverified future work; status in matlab/README.md
 docs/
   shakedown.md                    IMU config, file behavior, mount record, procedure
   day1-thread.md                  plain-language thread version of the day-1 write-up
 ```
 
-## Analysis authority and MATLAB status
+## Analysis language
 
-Python is the authoritative analysis and the only implementation used to
-produce the reported day-1 results. The preserved MATLAB files are
-unverified future work. None has been executed against this dataset, and
-none supports a published result. Detailed file-by-file scope is in
-[matlab/README.md](matlab/README.md).
+Everything here is Python (numpy; scipy and matplotlib optional). One
+script takes the raw session to every published number, table, figure,
+and the post itself, so "reproducible" means one command. The stages
+that wait on controlled-input data (ride PSD and ISO 2631-style
+weighting, bump log-decrement, constant-steer spiral gradient, step-steer
+metrics, the quarter-car fit and the semi-active study) will be written
+in Python when that data exists; their methods are specified in the plan
+post. Nothing gets written against synthetic data first.
+
+Until 2026-08-17 the repository also carried a `matlab/` directory of
+drafts for those stages plus MATLAB twins of the ingest, gate, and sync
+code. None of it was ever run against this dataset (the analysis machine
+has no MATLAB or Octave), and the twins had drifted from the Python that
+actually produced the numbers. They were removed rather than maintained;
+`git log -- matlab/` has them.
 
 ## Standing rules
 
@@ -224,6 +233,6 @@ a prediction, the prediction stays in the text.
 
 ## License
 
-Code (`tools/`, `matlab/`) is MIT. Data (`data/`, `figures/`) and
+Code (`tools/`) is MIT. Data (`data/`, `figures/`) and
 documentation are CC BY 4.0 — reuse with attribution to Adam Lin and a
 link to this repository. See [`LICENSE`](LICENSE).

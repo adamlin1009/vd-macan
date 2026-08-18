@@ -92,3 +92,15 @@ p95 0.97, p99 1.02, max 1.14 — registered prediction was 0.75–0.85 g.
   summary.json). Column definitions in `../README.md`.
 - `SHA256SUMS` — checksums of the raw files above
 - Full untouched card image in `../sd_dump_20260816/`
+
+## 2026-08-17 append — analysis tooling
+
+The MATLAB names above (`split_runs`, `ingest_imu`, `stepsteer_metrics`,
+and the rest of `matlab/`) are historical: none of that code ever ran
+against this session, and the directory was removed from the repository
+on 2026-08-17. The run table, gate anchors, and shifts above are
+reproduced exactly by `find_runs` in `tools/day1_analysis.py`
+(start +2 m, finish −23 m, same crossings to the sample). IMU parsing
+and dedupe are `load_imu_file` / `dedupe()` in the same script; the
+clock fit is `analyze_imu` (run-envelope cross-correlation, per-file
+linear fit). Text above is left as written.

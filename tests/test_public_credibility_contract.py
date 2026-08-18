@@ -33,7 +33,6 @@ class PublicCredibilityContractTests(unittest.TestCase):
             (REPO / "docs", {".md"}),
             (REPO / "data", {".md"}),
             (REPO / "tools", {".py"}),
-            (REPO / "matlab", {".m", ".md"}),
         ):
             paths.extend(
                 path for path in directory.rglob("*") if path.suffix in suffixes
@@ -119,20 +118,19 @@ class PublicCredibilityContractTests(unittest.TestCase):
     def test_instrument_characterization_names_and_impulse_status(self):
         self.assertTrue((REPO / "tools/imu_characterize.py").is_file())
         self.assertFalse((REPO / "tools/tap_check.py").exists())
-        self.assertTrue((REPO / "matlab/characterize_imu.m").is_file())
-        self.assertFalse((REPO / "matlab/tap_test.m").exists())
         tool = read("tools/imu_characterize.py").lower()
         self.assertIn("impulse observations are informational", tool)
         self.assertNotIn("logger cleared for the ride block", tool)
 
-    def test_python_is_authoritative_and_matlab_status_is_scoped(self):
+    def test_python_is_the_only_analysis_and_matlab_is_gone(self):
         readme = read("README.md")
         self.assertIn("Python is the authoritative analysis", readme)
-        self.assertIn("[matlab/README.md](matlab/README.md)", readme)
+        self.assertIn("## Analysis language", readme)
         self.assertNotIn("## MATLAB pipeline (status)", readme)
-        matlab = read("matlab/README.md").lower()
-        self.assertIn("unverified future work", matlab)
-        self.assertIn("none of these `.m` files has been executed", matlab)
+        self.assertNotIn("matlab/README.md", readme)
+        self.assertFalse((REPO / "matlab").exists())
+        self.assertNotIn("matlab/", read("LICENSE"))
+        self.assertIn("Code (`tools/`) is MIT.", readme)
 
 
 if __name__ == "__main__":
