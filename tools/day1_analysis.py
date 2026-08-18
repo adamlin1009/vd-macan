@@ -318,7 +318,10 @@ def fig_times(runs):
         return padt + (y1 - t) / (y1 - y0) * (h - padt - padb)
     def xmap(i):
         return padl + (i + 0.5) * (W - padl - padr) / 6
-    parts = [svg_open(h, "Run times by PASM mode")]
+    parts = [svg_open(
+        h,
+        "GPS virtual-gate estimates for three unmatched competition runs per PASM mode",
+    )]
     for g in [51, 52, 53]:
         parts.append(f'<line x1="{padl}" y1="{ymap(g):.1f}" x2="{W-padr}" '
                      f'y2="{ymap(g):.1f}" stroke="{GRID}" stroke-width="1"/>')
@@ -617,8 +620,8 @@ FIGURE_SPECS = [
     ("MAP", "fig01_course_map", 1,
      "RUN 6 · GPS PATH, SPEED-COLORED · VIRTUAL GATES", "RACEBOX MINI S · 25 HZ"),
     ("TIMES", "fig02_run_times", 2,
-     "RUN TIMES BY PASM MODE · GPS VIRTUAL-GATE ESTIMATES",
-     "SHOWN TO 0.1 S · CALIBRATION RMS 0.11 S · n=3 PER MODE"),
+     "GPS VIRTUAL-GATE ESTIMATES · THREE UNMATCHED RUNS PER MODE",
+     "SHOWN TO 0.1 S · CALIBRATION RMS 0.11 S · STORM STADIUM · 2026-08-15"),
     ("SPEED", "fig03_speed_distance", 3,
      "SPEED VS COURSE DISTANCE · BEST RUN PER MODE", "RACEBOX MINI S · 25 HZ"),
     ("GG", "fig04_gg_diagram", 4,
@@ -974,66 +977,56 @@ def main():
 POST_TEMPLATE = r"""---
 title: "Six runs, two damper maps: first data from Storm Stadium"
 date: "2026-08-16"
-summary: "About $300 of loggers, one autocross, six runs alternating PASM Normal and Sport+. The data caught me being wrong three times before it told me anything about the car."
+summary: "About $300 of loggers, one autocross, and six runs alternating PASM Normal and Sport+. Three assumptions failed before I could compare the car."
 ---
 
-You know that moment when you finally sit down with data you've been
-waiting weeks to collect? Saturday night I had two loggers' worth
-from my first instrumented autocross, a cold drink, and big plans.
+Saturday night, I opened two logger files from my first instrumented
+autocross expecting to compare PASM modes. I didn't get there right
+away. First I had to sort out three bad assumptions: the IMU's sample
+rate, my grip prediction, and the clock linking the two loggers.
 
-The data had other ideas. Before it told me one thing about the car,
-it caught me being wrong three times. That turned out to be the best
-part.
-
-So here's the whole story: six runs, two damper maps, a clock that
-flat-out lied to me, and a grip prediction I got to watch die in
-public. And you don't have to take my word for any of it: the raw
-session files, the processed per-run tables, and the code that
-produced every number and figure in this post are public in the
-[vd-macan repository](https://github.com/adamlin1009/vd-macan). One
-script regenerates the whole post from the raw logs.
+This is what I found in six runs. The raw session files, processed
+per-run tables, and code behind every number and figure are public in
+the [vd-macan repository](https://github.com/adamlin1009/vd-macan).
+One script rebuilds this post from the raw logs.
 
 ## The setup
 
-The experiment is almost embarrassingly simple. My Macan has a
-button. Press it and PASM swaps between a Normal damper map and a
-Sport+ one. Same springs, same anti-roll bars, same everything else.
-Just software deciding how hard the dampers push back.
+The comparison fits on one line: press the PASM button and my Macan
+switches between its Normal and Sport+ damper maps. The springs,
+anti-roll bars, and the rest of the hardware stay the same. The map
+is the intended variable.
 
-So I alternated it every single run. Normal, Sport+, Normal, Sport+,
+I alternated it every run. Normal, Sport+, Normal, Sport+,
 Normal, Sport+. Six runs in the afternoon session at Storm Stadium
 (SCCA Cal Club, Lake Elsinore), powertrain locked in Sport+, PSM in
 Sport. The damper button was the only thing I touched all afternoon.
 
-Housekeeping, because it matters later: cold pressures set to placard
-37/40 with my reference gauge. The TPMS read 36/39 at the start, a
-consistent 1 psi low on both axles, which is fine. Offsets cancel. By
-the end of the session it read 40/42, and fuel went from about 5/8
-tank to 1/2.
+The small setup details matter here. I set cold pressures to the
+placard 37/40 with my reference gauge. TPMS showed 36/39 at the
+start, a consistent 1 psi low on both axles, so the offset cancels.
+By the end it read 40/42. Fuel moved from about 5/8 tank to 1/2.
 
 Two loggers rode along: the RaceBox on the roof catching every run at
 25 Hz, and the AHRS IMU on the center console writing 200 Hz to its
-own storage. Two independent loggers means two independent clocks,
-and keeping them in step turned out to be its own small adventure.
-Luckily each run writes its own sync signature: a launch spike and
-then fifty-six seconds of unmistakable car dynamics. Why that
-mattered so much is Wrong #3.
+own storage. That also meant two independent clocks. Each run gave me
+a sync signature anyway: a launch spike followed by roughly 56
+seconds of car dynamics. I used that signal later to align the files.
 
-## Wrong #1: the "200 Hz" sensor isn't one
+## Wrong #1: 200 Hz frames weren't 200 Hz samples
 
-Quick detour on why sample rates matter, because this is the part
-people skip. Sampling theory is blunt: you only get to see content
-below half your sample rate,
+Sample rate sets the highest frequency a channel can resolve. You
+only get to see content below half the sample rate,
 
 $$f_\mathrm{visible} = \tfrac{1}{2} f_\mathrm{sample}.$$
 
 Secondary ride, the busy patter that makes a car feel firm, lives at
 roughly 4 to 25 Hz. The RaceBox samples at 25 Hz, so it tops out at
 12.5 Hz. It literally cannot see the top half of the thing I care
-about most. That's the whole reason the IMU exists in this project.
+about most. That's why the project also has the IMU.
 
-So before trusting the IMU, I characterized it. And found the
-brochure number:
+Before I used the IMU data, I characterized the logger. Its stored
+frame rate and distinct-value rates weren't the same:
 
 ```
 frames written to storage:      200 per second  (exact, clean)
@@ -1041,95 +1034,90 @@ distinct accelerometer values:  ~104 per second
 distinct gyro values:           ~50 per second
 ```
 
-Look at that middle line. The sensor writes 200 frames a second,
-sure. But its fusion loop only produces about 104 new accelerometer
-values a second, so nearly half those frames are copies of the one
-before. It still clears my requirement, since 104 Hz covers the 4 to
-25 Hz band four times over. But it's not what the listing says. **A
-spec sheet tells you what a sensor writes, not what it measures.**
-The ingest code drops the duplicates before any spectrum gets
-computed.
+The sensor writes 200 frames a second, but its fusion loop produces
+about 104 new accelerometer values a second. Nearly half the frames
+repeat the previous value. That still clears my requirement because
+104 Hz covers the 4 to 25 Hz band four times over. The product listing
+doesn't make that distinction. My ingest code drops the duplicates
+before it computes a spectrum.
 
 ## Timing runs without timing equipment
 
-Here's a fun problem. The event has timing lights, but their numbers
-live on a results sheet, not in my data. What I have is GPS. And GPS,
-if you ask it the right way, is timing equipment.
+The event has timing lights, but those numbers live on a results
+sheet, not in my logger file. The file gives me GPS instead.
 
-Think about what a run looks like in the data. Every launch is a hard
-acceleration from a dead stop. Every finish is one last big braking
-event. So I built virtual gates out of the six trajectories
-themselves: a start line where speed first crosses 5 m/s, and a
-finish line just before the terminal braking. The six launch points
-landed within 0.7 m of each other. Drivers stage more consistently
-than I expected. That one genuinely surprised me.
+Every run starts with hard acceleration from a stop and ends with a
+large braking event. I built virtual gates from the six trajectories:
+a start line where speed first crosses 5 m/s, and a finish line just
+before the terminal braking. The six launch points landed within 0.7
+m of one another, tighter than I expected.
 
 Then I calibrated the pair against the two official times I
-remembered. The fit barely moved the start line. But it pulled the
-finish 23 m before the braking point, and once you see it, it's
-obvious: at 22 m/s you cross the lights flat-out and don't touch the
-brakes for another full second. After calibration the GPS virtual-gate
-estimates are shown to tenths; the fit residual against those two
-remembered times is about 0.11 s rms.
+remembered. The fit barely moved the start line, but it pulled the
+finish 23 m before the braking point. At 22 m/s, the car crosses the
+lights flat-out and doesn't reach that obvious brake event for about
+another second. I show the calibrated GPS virtual-gate estimates to
+tenths; the fit residual against those two remembered times is about
+0.11 s rms.
 
 @@FIG_MAP@@
 
 ## The runs
 
-| run | PASM | time [s] | vmax [mph] | peak lat [g] |
+| run | PASM | GPS virtual-gate estimate [s] | vmax [mph] | peak lat [g] |
 |---|---|---|---|---|
 @@TABLE@@
 
-Sport+ holds the day's best time, and the mode averages sit about
-half a second apart. Run 4 was the slow one, and that one's on me.
-Driving mistake. Not the dampers.
+Sport+ holds the day's best GPS estimate, and the mode averages sit
+about half a second apart. Run 4 was the slow one. That was my driving
+mistake, not a damper result.
 
-But look at the shape of this. The margin between modes is tenths on
-a 52-second course, and from the seat they felt like completely
-different cars. **"Feels transformed" and "barely faster" can both be
-true at once.** That gap between what you feel and what the clock
-says? Closing it is the whole reason this project exists.
+These are GPS virtual-gate estimates, shown to tenths because the
+calibration residual is about a tenth. They are also
+three unmatched competition runs per mode. Driver inputs and lines
+weren't matched, so neither the time gap nor the
+response differences can be attributed to PASM.
+
+From the seat, the modes felt like different cars even though their
+estimated times were separated by tenths on a 52-second course. That
+gap between the subjective impression and the logged result is what I
+want to measure, but this session can't assign its cause.
 
 @@FIG_TIMES@@
 
 @@FIG_SPEED@@
 
-## Wrong #2: the grip prediction is dead. Good.
+## Wrong #2: the grip prediction failed
 
-Back before any data existed, I put a number on the record: a
+Before any data existed, I put a number on the record: a
 2.2-ton-class SUV on touring all-seasons should top out around
-0.75–0.85 g. It felt safe. Maybe even a little generous.
+0.75–0.85 g.
 
-The primary measurement is the raw roof RaceBox channel across all six
-runs: 95th percentile @@P95@@ g. Peak @@MAX@@ g.
+The primary measurement is the raw roof-mounted RaceBox channel across
+all six runs: 95th percentile @@P95@@ g, peak @@MAX@@ g. I missed by a
+wide margin, so the registered prediction stays in the report.
 
-Not missed. Demolished. And per this project's standing rules, the
-dead prediction stays right here in the text where everyone can see
-it. **Register your predictions before the data exists. Being wrong
-on the record is the fastest calibration a person can get.**
-
-Two caveats before anyone quotes those numbers at a tire shop. The
-RaceBox sits on the roof, so body roll tilts it and leaks a slice of
-gravity into the lateral channel. I'll measure and correct that
-below, once I've actually measured the roll. And an autocross rewards
-brief peaks, not skidpad steady-state.
+Two caveats stay attached. The raw
+roof-mounted values remain the primary grip result. Body roll tilts
+the RaceBox and leaks a slice of gravity into the lateral channel, so
+below I apply one roll-gradient correction as an exploratory
+sensitivity check, not a replacement measurement. And an autocross
+rewards brief peaks, not skidpad steady-state.
 
 @@FIG_GG@@
 
-## Wrong #3: the clock that lied by two percent
+## Wrong #3: the IMU clock drifted by two percent
 
 My first pass at the IMU file said the sensor sat perfectly still
-through every single run window. Flat. Nothing. For one genuinely bad
-hour, the working theory was that it had spent the day in the paddock
-while I drove.
+through every run window. Flat. Nothing. I first suspected it had
+spent the session in the paddock while I drove.
 
-It hadn't. It rode the console all session, and its own file proves
-it: six unmistakable 56-second bursts of car dynamics, spaced exactly
-like the run schedule. They just weren't where the timestamps said
-they'd be.
+It hadn't. The file contained six unmistakable 56-second bursts of
+car dynamics, spaced exactly like the run schedule. They just weren't
+where the timestamps said they'd be.
 
-Here's the failure mode, written out. File time relates to true time
-through an offset that drifts,
+The failure was clock drift. File time relates to true time through
+an offset,
 
 $$t_\mathrm{GPS} = t_\mathrm{IMU} + \mathrm{OFF}(t), \qquad
 \mathrm{OFF}(t) = a + b\,t,$$
@@ -1137,44 +1125,41 @@ $$t_\mathrm{GPS} = t_\mathrm{IMU} + \mathrm{OFF}(t), \qquad
 and the fitted drift came out around \( b \approx 20 \) ms per
 second. That's the two percent. The offset was @@OFF1@@ s at run 1
 and @@OFF6@@ s by run 6. Fifty-one seconds of drift in one afternoon.
-The IMU's tick is beautifully regular, 5.000 ms per frame relative to
-itself. It's just that its whole sense of "now" runs slow, and every
-power cycle resets the starting error. My analysis windows were
-slicing through empty paddock time while the actual runs sat two
-minutes away in file time.
+The IMU frames are spaced a regular 5.000 ms apart relative to one
+another, but the clock runs slow and every power cycle resets the
+starting error. My analysis windows were cutting through empty
+paddock time while the actual runs sat two minutes away in file time.
 
-The fix cost nothing. Cross-correlate the acceleration envelope
-against the RaceBox, fit the \( \mathrm{OFF}(t) \) line per file,
-done. Per-run correlation came out @@XCLO@@ to @@XCHI@@ with
-residuals inside ±130 ms. And with the clock fixed, everything
-snapped into place: IMU lateral tracks GPS lateral at
-\( r = @@AYHI@@ \), longitudinal tracks longitudinal, yaw tracks yaw.
+The correction needed no new hardware. I cross-correlated the
+acceleration envelope against the RaceBox and fit the
+\( \mathrm{OFF}(t) \) line per file. Per-run correlation came out
+@@XCLO@@ to @@XCHI@@ with residuals inside ±130 ms. After alignment,
+IMU lateral tracks GPS lateral at \( r = @@AYHI@@ \), longitudinal
+tracks longitudinal, and yaw tracks yaw.
 
-**Never trust a logger's clock you haven't measured against GPS. And
-look for the sync signal already hiding in your data.** Both lessons
-are on the per-session checklist now, written in the tone of someone
-who learned them the hard way.
+The per-session checklist now has two clock checks: measure each
+logger against GPS, and look for the sync signal already present in
+the driving data.
 
-## Did the seat tell the truth? Rate isn't angle
+## What did the seat measure? Rate isn't angle
 
 What I remembered from the seat, written down the day after (the
 per-run blind sheets fell to the event-day rush, so this is memory
 and I'm labeling it as memory): Normal had way more body roll, pitch,
 and yaw. Sport+ felt planted and reactive.
 
-First channel that can referee: the roll-rate gyro.
+The first relevant channel is the roll-rate gyro.
 
 @@FIG_ROLL@@
 
-And at first glance the gyro says I'm wrong. Roll-rate RMS is
+At first glance, the gyro disagrees. Roll-rate RMS is
 *higher* in Sport+, not lower: @@RS@@ °/s against @@RN@@ °/s, about
-@@RGAIN@@% more. Normalize by how hard the car was actually being
-driven, \( \mathrm{RMS}(p)\,/\,\mathrm{RMS}(\dot a_y) \), and it's a
-dead wash: @@NRM_N@@ against @@NRM_S@@.
+@@RGAIN@@% more. Normalize by how hard the car was being driven,
+\( \mathrm{RMS}(p)\,/\,\mathrm{RMS}(\dot a_y) \), and the values are
+almost equal: @@NRM_N@@ against @@NRM_S@@.
 
-So was the seat lying? No. The cleanest way to see it is to just
-write the roll dynamics down. One equation carries the whole
-argument:
+I had been using roll rate and roll angle as if they were the same
+thing. The basic roll equation separates them:
 
 $$K_\varphi\,\varphi + C_\varphi\,\dot\varphi = m\,h_s\,a_y$$
 
@@ -1182,91 +1167,86 @@ where \( \varphi \) is the roll angle, \( K_\varphi \) is the roll
 stiffness (springs and anti-roll bars, stock, fixed),
 \( C_\varphi \) is the roll damping (the dampers, the one thing PASM
 touches), and \( m\,h_s\,a_y \) is the overturning moment from
-cornering. Now watch what happens in a steady corner. Steady means
-\( \dot\varphi = 0 \), so
+cornering. In a steady corner, \( \dot\varphi = 0 \), so
 
 $$\varphi_\mathrm{ss} = \frac{m\,h_s}{K_\varphi}\,a_y$$
 
-and \( C_\varphi \) just... vanishes. The damper term multiplies roll
-*rate*, so once the car settles into a corner, the dampers have no
-vote in how far it leans. **PASM can't change this car's lean. It can
-only change how the lean happens.**
+and \( C_\varphi \) drops out. The damper term multiplies roll *rate*,
+so it doesn't set the final angle once the car settles into a corner.
+With the same springs and anti-roll bars, PASM changes the transition,
+not the steady-state lean in this model.
 
-Which reframes everything. "Body roll" was two claims wearing one
-phrase: roll angle, which is spring territory, and roll rate, which
-is damper territory. "Planted and reactive" is a rate feeling, and a
-tighter car makes *more* roll rate, not less. The gyro agreed with
-the seat the whole time. I was just asking it the wrong question.
+The phrase "body roll" had been doing too much work. I meant roll
+angle, which is spring territory, and roll rate, which is damper
+territory. "Planted and reactive" describes rate. A tighter response
+can produce more roll rate, not less, so the gyro fit the remembered
+seat impression. I had asked it the wrong question.
 
 One real confound stays attached: I drove the Sport+ runs harder.
 Separating "the car responds faster" from "the driver asked for more"
 would need a future matched-input study after a suitable venue exists.
 
-## Wringing the dataset: five derivations, one survivor
+## Five derived analyses
 
-With the clock solved I got greedy. Five derived analyses, everything
-I could think to squeeze out of two loggers. One produced a number
-I'll stand behind. Four died in ways worth writing down.
+Once the clocks lined up, I tried five derived analyses. One produced
+a usable number. Four didn't.
 
-The survivor is my favorite trick of the whole weekend: a roll sensor
-built out of disagreement. Here's the idea. An accelerometer bolted
-to the body reads cornering force plus a slice of gravity leaking
-through the roll angle. GPS speed times gyro yaw rate reads cornering
-force alone, no gravity anywhere in it:
+The useful one starts with two channels that disagree for a known
+reason. An accelerometer bolted to the body reads cornering force plus
+a slice of gravity leaking through the roll angle. GPS speed times
+gyro yaw rate reads cornering force alone, with no gravity term:
 
 $$a_\mathrm{meas} \approx a_y + g\sin\varphi \approx a_y + g\,\varphi,
 \qquad a_\mathrm{kin} = v\,\dot\psi.$$
 
-Two channels that should agree, and the gap between them *is* the
-roll angle:
+The gap between those channels estimates roll angle:
 
 $$\varphi \approx \frac{a_\mathrm{meas} - a_\mathrm{kin}}{g}.$$
 
 The roll gradient is then just the slope \( G = d\varphi/da_y \) in
 degrees per g. Both channels come from the same device, so the clock
-saga can't touch this one. Sample it where cornering is quasi-steady,
-regress run by run:
+drift between devices can't affect this analysis. I sampled where
+cornering is quasi-steady and regressed each run:
 
 @@FIG_RGRAD@@
 
-And the result genuinely surprised me. **Normal: @@RGN@@ °/g**
-(per-run @@RGNLO@@ to @@RGNHI@@). **Sport+: @@RGS@@ °/g** (@@RGSLO@@
-to @@RGSHI@@). The ranges don't even touch. Every Normal run leaned
-more per g than every Sport+ run.
+The fitted gradients were **Normal: @@RGN@@ °/g** (per-run @@RGNLO@@
+to @@RGNHI@@) and **Sport+: @@RGS@@ °/g** (@@RGSLO@@ to @@RGSHI@@).
+The ranges don't touch; every Normal run produced a higher estimated
+gradient than every Sport+ run.
 
-But wait. Didn't I just derive, two sections ago, that the
-steady-state gradient can't split on stock springs? Exactly. And
-that's the tell: an autocross never gives you truly steady samples.
-Even the calmest windows carry some leftover \( \dot\varphi \), and
-that's the term the dampers own. The ~0.8 °/g split is
-\( C_\varphi \) bleeding into a measurement that was supposed to
-exclude it. It's the seat's "Normal leans more," made visible. Two
-fingerprints back that reading: loosen the steadiness filter and the
-split shrinks toward overlap, and the binned means bow steeper at
-high g, meaning the relation is progressive and a single slope is a
-summary. A genuinely steady number would need a future constant-radius
-study, only after a suitable venue exists.
+That ~0.8 °/g split is not a PASM attribution. A true steady-state
+gradient shouldn't split with the same springs, but an autocross never
+gives me truly steady samples. Even the calmest windows carry some
+leftover \( \dot\varphi \), which lets damping enter a measurement
+meant to exclude it. Damping is one plausible contribution; unmatched
+driver inputs are another, and this dataset can't separate them.
 
-The gradient pays off the grip section's promise too. The roof
-accelerometer over-reads lateral g through the same gravity-leak
-mechanism, so with \( G \approx 2.5 \) °/g, or
+Two checks help bound the interpretation. Loosen the steadiness
+filter and the split shrinks toward overlap. The binned means also bow
+steeper at high g, which says the relationship is progressive and one
+slope is only a summary. A genuinely steady number would need a future
+constant-radius study, only after a suitable venue exists.
+
+The gradient also shows the possible scale of the roof-mount
+confound. With \( G \approx 2.5 \) °/g, or
 \( G_\mathrm{rad} \approx 0.044 \),
 
 $$a_\mathrm{roll\ adjusted} \approx
 \frac{a_\mathrm{meas}}{1 + G_\mathrm{rad}}$$
 
-As an exploratory correction, that works out to about a 4% haircut:
+the exploratory correction is about 4%:
 @@P95@@ g becomes @@P95C@@ g sustained, and @@MAX@@ g becomes @@MAXC@@
-g peak. The raw roof values remain the primary measurement because the
-roll gradient is itself quasi-steady and approximate. Either reading is
-comfortably past my prediction. It stays dead.
+g peak. The raw roof-mounted values remain primary because the roll
+gradient is itself quasi-steady and approximate. The prediction is
+still wrong after the sensitivity check.
 
-The graveyard, with causes of death:
+The other four analyses didn't produce usable results:
 
 - **Roll transfer function per mode.** Coherence between lateral
   input and roll rate never reached 0.6 at any frequency. On a
   course, the road excites roll as much as the driver does, and the
-  estimator starves.
+  estimator doesn't have enough usable input.
 - **Launch and brake pitch transients.** Driver variance swamps the
   mode signal, and the roof lever-arm contaminates the accelerometer
   during pitch transients.
@@ -1275,20 +1255,16 @@ The graveyard, with causes of death:
 - **Repeated-bump ringdowns.** Storm Stadium's lot is smooth. Three
   vertical events all session, none recurring.
 
-**Negative results are results. Write them down.** Every one of these
-failures points at the same missing ingredient, and it's not cleverer
-math. It's controlled inputs.
+All four need the same thing: controlled inputs, not another pass at
+the same session.
 
-## Steal these
-
-If you're thinking about instrumenting your own car, here's what a
-weekend of being wrong taught me:
+## What this session changed
 
 - Characterize the instrument before the experiment.
-- Register predictions before data exists.
-- The sensor doesn't measure what it isn't bolted to.
-- Never trust an unmeasured clock.
-- When clever math dies, you need controlled inputs, not more math.
+- Write predictions down before the data exists.
+- Record what each sensor is bolted to.
+- Measure each logger's clock against a reference.
+- When an analysis needs cleaner inputs, collect controlled inputs.
 
 ## Future studies, only after a suitable venue exists
 

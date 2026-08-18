@@ -71,8 +71,50 @@ class PublicCredibilityContractTests(unittest.TestCase):
         self.assertNotIn("runs[i]['time']:.2f", generator)
         self.assertIn("## Future studies, only after a suitable venue exists", generator)
         self.assertIn("CALIBRATION RMS 0.11 S", figure)
+        self.assertIn(
+            'aria-label="GPS virtual-gate estimates for three unmatched '
+            'competition runs per PASM mode"',
+            figure,
+        )
         self.assertIn(">53.1</text>", figure)
         self.assertNotIn(">53.11</text>", figure)
+
+    def test_generated_day_one_copy_keeps_scope_without_canned_slogans(self):
+        generator = read("tools/day1_analysis.py")
+        for phrase in (
+            "The data had other ideas",
+            "the whole reason this project exists",
+            "the grip prediction is dead. Good.",
+            "the clock that lied",
+            "Wringing the dataset",
+            "my favorite trick",
+            "The graveyard, with causes of death",
+            "Negative results are results",
+            "## Steal these",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertNotIn(phrase.lower(), generator.lower())
+
+        self.assertIn(
+            "| run | PASM | GPS virtual-gate estimate [s] |",
+            generator,
+        )
+        self.assertRegex(
+            generator,
+            r"three unmatched\s+competition runs per mode",
+        )
+        self.assertRegex(
+            generator,
+            r"neither the time gap nor the\s+response differences can be"
+            r"\s+attributed to PASM",
+        )
+        self.assertRegex(
+            generator,
+            r"raw\s+roof-mounted values remain the\s+primary grip result",
+        )
+        self.assertRegex(generator, r"exploratory\s+sensitivity check")
+        self.assertIn("The current campaign was one autocross day. It is complete.", generator)
+        self.assertIn("None is scheduled.", generator)
 
     def test_instrument_characterization_names_and_impulse_status(self):
         self.assertTrue((REPO / "tools/imu_characterize.py").is_file())
